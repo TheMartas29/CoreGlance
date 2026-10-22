@@ -37,7 +37,7 @@ Everything is configurable in the popover's settings (gear icon): which metrics 
 Requirements: macOS 13 Ventura or newer. Building needs the Xcode command line tools.
 
 ```sh
-git clone https://github.com/<you>/CoreGlance.git
+git clone https://github.com/TheMartas29/CoreGlance.git
 cd CoreGlance
 scripts/build-app.sh --install    # universal arm64 + x86_64 build, copied to /Applications
 open /Applications/CoreGlance.app
