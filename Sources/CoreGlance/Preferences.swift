@@ -54,17 +54,16 @@ enum Metric: String, CaseIterable, Identifiable {
     /// SF Symbol shown next to the value in the menu bar.
     var symbol: String {
         switch self {
-        case .cpu: return "cpu"
+        case .cpu, .cpuTemperature: return "cpu"
         case .cpuCores: return "square.split.2x1"
         case .cpuFrequency, .eFrequency: return "speedometer"
-        case .gpu: return "cube.transparent"
+        case .gpu, .gpuTemperature: return "cube.transparent"
         case .gpuFrequency: return "cube"
         case .memory: return "memorychip"
         case .memoryPressure: return "gauge.with.dots.needle.50percent"
         case .compressed: return "rectangle.compress.vertical"
         case .swap: return "arrow.left.arrow.right"
-        case .disk: return "internaldrive"
-        case .cpuTemperature, .gpuTemperature, .ssdTemperature: return "thermometer.medium"
+        case .disk, .ssdTemperature: return "internaldrive"
         case .batteryTemperature: return "minus.plus.batteryblock"
         case .battery: return "battery.75percent"
         case .power: return "bolt"
@@ -101,7 +100,8 @@ enum Metric: String, CaseIterable, Identifiable {
 
     /// Whether the caption is drawn even when glyphs are on (the glyph is shared or unclear).
     var needsCaption: Bool {
-        [.cpuFrequency, .eFrequency, .gpuFrequency, .cpuTemperature, .gpuTemperature, .ssdTemperature, .swap, .compressed].contains(self)
+        // Temperatures share the glyph of their component; the "°" tells them apart.
+        [.cpuFrequency, .eFrequency, .gpuFrequency, .swap, .compressed].contains(self)
     }
 }
 
