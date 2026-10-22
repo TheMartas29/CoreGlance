@@ -194,17 +194,27 @@ enum StatusBarRenderer {
         let colored = groups.contains { $0.contains { if case .value(_, let sev) = $0.0 { return sev != .normal } else { return false } } }
         let base: NSColor = colored ? (dark ? .white : NSColor(white: 0, alpha: 0.85)) : .black
 
-        let image = NSImage(size: NSSize(width: ceil(width), height: height), flipped: false) { _ in
-            var x: CGFloat = 0
-            for group in groups {
-                for (part, ink) in group {
-                    draw(part, x: x - ink.minX, height: height, font: font, base: base)
-                    x += ink.width + innerGap
-                }
-                x += groupGap - innerGap
+        // Rendered eagerly into a bitmap. A lazy drawing handler would run inside the status bar's
+        // own drawing context, where CoreText can fail to resolve SF Mono and throw (crash in 0.2.0).
+        let size = NSSize(width: ceil(width), height: height)
+        let scale = NSScreen.screens.map(\.backingScaleFactor).max() ?? 2
+        guard let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: Int(size.width * scale), pixelsHigh: Int(size.height * scale),
+                                         bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+                                         colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0) else { return nil }
+        rep.size = size
+        NSGraphicsContext.saveGraphicsState()
+        NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
+        var x: CGFloat = 0
+        for group in groups {
+            for (part, ink) in group {
+                draw(part, x: x - ink.minX, height: height, font: font, base: base)
+                x += ink.width + innerGap
             }
-            return true
+            x += groupGap - innerGap
         }
+        NSGraphicsContext.restoreGraphicsState()
+        let image = NSImage(size: size)
+        image.addRepresentation(rep)
         image.isTemplate = !colored
         return image
     }
