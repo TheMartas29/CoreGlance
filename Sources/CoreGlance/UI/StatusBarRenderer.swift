@@ -1,6 +1,7 @@
 import AppKit
 
-/// Draws the menu bar item as one template image so macOS handles light/dark/highlight tinting.
+/// Draws the menu bar item as one image. Normally a template image, so macOS handles
+/// light/dark/highlight tinting; when a value must be colored it is drawn in explicit colors.
 enum StatusBarRenderer {
     // Fixed sizes chosen to fit the 22–24 pt menu bar, including notched MacBooks.
     private static let valueSize: CGFloat = 11
@@ -17,12 +18,31 @@ enum StatusBarRenderer {
     private enum Part {
         case glyph(NSImage)
         case caption(String)
-        case value(String)
+        case value(String, Severity)
         case stacked(String, String)
     }
 
     private static func temperature(_ r: Reading?, _ prefs: Preferences) -> Double? {
         prefs.temperatureMode == .hottest ? r?.max : r?.average
+    }
+
+    /// The metric's value in its threshold unit (%, °C, GB), for coloring.
+    static func severity(for metric: Metric, in s: Snapshot, prefs: Preferences) -> Severity {
+        switch metric {
+        case .memory, .memoryPressure, .compressed:
+            // macOS's own memory pressure is the meaningful signal, not a fixed GB figure.
+            return s.memory.pressure >= 4 ? .critical : s.memory.pressure >= 2 ? .warning : .normal
+        case .cpu: return prefs.severity(metric, value: s.cpu * 100)
+        case .gpu: return prefs.severity(metric, value: s.gpu.map { $0 * 100 })
+        case .cpuTemperature: return prefs.severity(metric, value: temperature(s.thermals.cpu, prefs))
+        case .gpuTemperature: return prefs.severity(metric, value: temperature(s.thermals.gpu, prefs))
+        case .batteryTemperature: return prefs.severity(metric, value: s.batteryTemperature)
+        case .ssdTemperature: return prefs.severity(metric, value: s.thermals.ssd)
+        case .swap: return prefs.severity(metric, value: s.memory.swapUsed / 1_073_741_824)
+        case .disk: return prefs.severity(metric, value: s.disk.total > 0 ? s.disk.free / 1e9 : nil)
+        case .battery: return prefs.severity(metric, value: s.battery.present && !s.battery.pluggedIn ? s.battery.percent * 100 : nil)
+        default: return .normal
+        }
     }
 
     static func value(for metric: Metric, in s: Snapshot, prefs: Preferences) -> String {
@@ -72,7 +92,8 @@ enum StatusBarRenderer {
         case .cpuCores:
             parts.append(.stacked("P " + Format.percent(s.cpuP), "E " + Format.percent(s.cpuE)))
         default:
-            parts.append(.value(value(for: metric, in: s, prefs: prefs)))
+            let severity = prefs.colorize ? severity(for: metric, in: s, prefs: prefs) : .normal
+            parts.append(.value(value(for: metric, in: s, prefs: prefs), severity))
         }
         return parts
     }
@@ -91,7 +112,7 @@ enum StatusBarRenderer {
         switch part {
         case .glyph(let i): return i.size
         case .caption(let t): return (t as NSString).size(withAttributes: [.font: captionFont])
-        case .value(let t): return (t as NSString).size(withAttributes: [.font: valueFont(font)])
+        case .value(let t, _): return (t as NSString).size(withAttributes: [.font: valueFont(font)])
         case .stacked(let a, let b):
             let f = valueFont(font, size: 8.5)
             let sa = (a as NSString).size(withAttributes: [.font: f]), sb = (b as NSString).size(withAttributes: [.font: f])
@@ -99,18 +120,35 @@ enum StatusBarRenderer {
         }
     }
 
-    private static func draw(_ part: Part, x: CGFloat, height: CGFloat, font: BarFont) {
+    private static func color(_ severity: Severity) -> NSColor? {
+        switch severity {
+        case .normal: return nil
+        case .warning: return .systemOrange
+        case .critical: return .systemRed
+        }
+    }
+
+    /// `base` is the color for everything that is not a colored value (black for template images).
+    private static func draw(_ part: Part, x: CGFloat, height: CGFloat, font: BarFont, base: NSColor = .black) {
         let sz = size(part, font)
         let y = ((height - sz.height) / 2).rounded()
         switch part {
         case .glyph(let i):
-            i.draw(in: NSRect(x: x, y: y, width: sz.width, height: sz.height))
+            let rect = NSRect(x: x, y: y, width: sz.width, height: sz.height)
+            if base == .black {
+                i.draw(in: rect)
+            } else {
+                // Symbol images draw black; tint them to match the menu bar text.
+                NSImage(size: sz, flipped: false) { r in
+                    i.draw(in: r); base.set(); r.fill(using: .sourceAtop); return true
+                }.draw(in: rect)
+            }
         case .caption(let t):
-            (t as NSString).draw(at: NSPoint(x: x, y: y), withAttributes: [.font: captionFont, .foregroundColor: NSColor.black])
-        case .value(let t):
-            (t as NSString).draw(at: NSPoint(x: x, y: y), withAttributes: [.font: valueFont(font), .foregroundColor: NSColor.black])
+            (t as NSString).draw(at: NSPoint(x: x, y: y), withAttributes: [.font: captionFont, .foregroundColor: base])
+        case .value(let t, let severity):
+            (t as NSString).draw(at: NSPoint(x: x, y: y), withAttributes: [.font: valueFont(font), .foregroundColor: color(severity) ?? base])
         case .stacked(let top, let bottom):
-            let attrs: [NSAttributedString.Key: Any] = [.font: valueFont(font, size: 8.5), .foregroundColor: NSColor.black]
+            let attrs: [NSAttributedString.Key: Any] = [.font: valueFont(font, size: 8.5), .foregroundColor: base]
             (top as NSString).draw(at: NSPoint(x: x, y: height / 2 - 1), withAttributes: attrs)
             (bottom as NSString).draw(at: NSPoint(x: x, y: height / 2 - sz.height / 2 + 1), withAttributes: attrs)
         }
@@ -144,7 +182,8 @@ enum StatusBarRenderer {
         return (CGFloat(minCol) / scale - pad, CGFloat(maxCol - minCol + 1) / scale)
     }
 
-    static func image(for s: Snapshot, prefs: Preferences) -> NSImage? {
+    /// - Parameter dark: whether the menu bar currently shows light text (only used when coloring).
+    static func image(for s: Snapshot, prefs: Preferences, dark: Bool = false) -> NSImage? {
         let font = prefs.font
         let height = NSStatusBar.system.thickness
         let groups = prefs.enabled.filter { $0.isAvailable(in: s) }.map { parts(for: $0, in: s, prefs: prefs).map { ($0, ink($0, height: height, font: font)) } }
@@ -152,18 +191,21 @@ enum StatusBarRenderer {
         let width = groups.map { g in g.map { $0.1.width }.reduce(0, +) + innerGap * CGFloat(g.count - 1) }.reduce(0, +)
             + groupGap * CGFloat(groups.count - 1)
 
+        let colored = groups.contains { $0.contains { if case .value(_, let sev) = $0.0 { return sev != .normal } else { return false } } }
+        let base: NSColor = colored ? (dark ? .white : NSColor(white: 0, alpha: 0.85)) : .black
+
         let image = NSImage(size: NSSize(width: ceil(width), height: height), flipped: false) { _ in
             var x: CGFloat = 0
             for group in groups {
                 for (part, ink) in group {
-                    draw(part, x: x - ink.minX, height: height, font: font)
+                    draw(part, x: x - ink.minX, height: height, font: font, base: base)
                     x += ink.width + innerGap
                 }
                 x += groupGap - innerGap
             }
             return true
         }
-        image.isTemplate = true
+        image.isTemplate = !colored
         return image
     }
 }

@@ -8,6 +8,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     private let popover = NSPopover()
     private var cancellables: Set<AnyCancellable> = []
+    private var appearanceObservation: NSKeyValueObservation?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -25,12 +26,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             DispatchQueue.main.async { self?.render() }
         }.store(in: &cancellables)
         prefs.$interval.removeDuplicates().sink { [weak self] in self?.monitor.start(interval: $0) }.store(in: &cancellables)
+        // Colored values are not template-tinted, so redraw when the menu bar flips light/dark.
+        appearanceObservation = statusItem.button?.observe(\.effectiveAppearance) { [weak self] _, _ in
+            DispatchQueue.main.async { self?.render() }
+        }
         render()
     }
 
     private func render() {
         guard let button = statusItem.button else { return }
-        if let image = StatusBarRenderer.image(for: monitor.snapshot, prefs: prefs) {
+        let dark = button.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+        if let image = StatusBarRenderer.image(for: monitor.snapshot, prefs: prefs, dark: dark) {
             button.image = image
             button.title = ""
         } else {
