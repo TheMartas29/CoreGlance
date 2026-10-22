@@ -29,6 +29,27 @@ enum Snapshotter {
             renderer.scale = 2
             save(renderer.nsImage, dir, dark ? "popover-dark.png" : "popover-light.png")
         }
+        renderSettings(monitor, prefs, into: dir)
+    }
+
+    /// AppKit-backed controls (checkboxes, steppers) only draw inside a real view hierarchy,
+    /// so the settings page is rendered through an off-screen window instead of ImageRenderer.
+    static func renderSettings(_ monitor: Monitor, _ prefs: Preferences, into dir: URL) {
+        for dark in [false, true] {
+            let root = SettingsView(prefs: prefs, snapshot: monitor.snapshot)
+                .padding(14)
+                .frame(width: 320)
+                .background(dark ? Color(white: 0.17) : Color(white: 0.97))
+            let host = NSHostingView(rootView: root)
+            host.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
+            host.frame = NSRect(origin: .zero, size: host.fittingSize)
+            let window = NSWindow(contentRect: host.frame, styleMask: .borderless, backing: .buffered, defer: false)
+            window.contentView = host
+            host.layoutSubtreeIfNeeded()
+            guard let rep = host.bitmapImageRepForCachingDisplay(in: host.bounds) else { continue }
+            host.cacheDisplay(in: host.bounds, to: rep)
+            try? rep.representation(using: .png, properties: [:])?.write(to: dir.appendingPathComponent(dark ? "settings-dark.png" : "settings-light.png"))
+        }
     }
 
     /// Puts the template status item on a menu-bar-like strip, tinted for the appearance.
