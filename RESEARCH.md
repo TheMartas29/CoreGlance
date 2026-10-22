@@ -55,18 +55,19 @@ This file summarizes the research behind the implementation. Every value comes f
 
 ## Alert thresholds
 
-When **Color values at warning / critical levels** is on, a menu bar value turns orange at the warning level and red at the critical level. Only the value is colored, never the glyph. Every level can be changed in Settings → Alerts. The defaults, and where they come from:
+When **Color temperatures at warning / critical levels** is on, a temperature in the menu bar turns orange at the warning level and red at the critical level. Only the value is colored, never the glyph. Other metrics (usage, memory, disk) are never colored. Every level can be changed in Settings → Alerts. The defaults, and where they come from:
 
-| Metric | Warning | Critical | Basis |
+| Sensor | Warning | Critical | Basis |
 |---|---|---|---|
-| CPU temperature | 90 °C | 100 °C | Apple doesn't publish a junction limit. Spec databases list M4 / M4 Pro / M4 Max at **TjMax 100 °C** ([cpu-monkey](https://www.cpu-monkey.com/en/compare_cpu-apple_m4_10_cpu-vs-apple_m4_max_16_cpu_40_gpu), [comparigon](https://comparigon.com/cpus/apple-m4-pro-14-core)). Users report throttling from about 100–107 °C, e.g. a base Mac mini M4 dropping from 4.46 to ~3.8 GHz ([MacRumors](https://forums.macrumors.com/threads/mac-mini-m4-thermals.2442671/)). |
-| GPU temperature | 85 °C | 100 °C | Same die and junction limit as the CPU. The GPU sensors usually read lower, so it warns a little earlier. |
-| Battery temperature | 40 °C | 44 °C | Apple advises against ambient temperatures above 35 °C. A battery controller was observed stopping charging when the gas-gauge sensor reached **44 °C** ([Eclectic Light](https://eclecticlight.co/2021/01/30/why-your-laptop-mac-may-not-be-recharging/)). AlDente's "Heat Protection" defaults to 35 °C ([AlDente](https://apphousekitchen.com/feature-explanation-heat-protection/)). Li-ion ageing speeds up noticeably above ~40 °C. |
-| SSD temperature | 70 °C | 80 °C | Typical NVMe warning/critical composite temperatures (WCTEMP 70–80 °C, CCTEMP 80–85 °C). The drive starts throttling at WCTEMP ([Netdata NVMe guide](https://www.netdata.cloud/guides/nvme/nvme-thermal-throttling/)). |
-| Free disk space | < 50 GB | < 20 GB | A macOS upgrade needs roughly 26–44 GB free (Apple's "empty space requirements"), and ~50 GB is the usual recommendation ([Apple Community](https://discussions.apple.com/thread/254167993)). Swap and updates fail when the disk is nearly full. |
-| CPU / GPU usage | 80 % | 95 % | Convention: sustained load near saturation. |
-| Swap used | 4 GB | 10 GB | Heuristic: a few GB of swap is normal on macOS, while double-digit GB means RAM is heavily oversubscribed. |
-| Battery charge | < 20 % | < 10 % | Matches the common low-battery and Low Power Mode prompts. Only applied while on battery. |
-| Memory used / pressure / compressed | — | — | Not a fixed number. These metrics use the kernel's own memory pressure level (`kern.memorystatus_vm_pressure_level`: 2 = warning, 4 = critical), the same signal Activity Monitor's pressure graph shows. |
+| CPU | 90 °C | 100 °C | Apple doesn't publish a junction limit. Spec databases list M4 / M4 Pro / M4 Max at **TjMax 100 °C** ([cpu-monkey](https://www.cpu-monkey.com/en/compare_cpu-apple_m4_10_cpu-vs-apple_m4_max_16_cpu_40_gpu), [comparigon](https://comparigon.com/cpus/apple-m4-pro-14-core)). Users report throttling from about 100–107 °C, e.g. a base Mac mini M4 dropping from 4.46 to ~3.8 GHz ([MacRumors](https://forums.macrumors.com/threads/mac-mini-m4-thermals.2442671/)). |
+| GPU | 85 °C | 100 °C | Same die and junction limit. The GPU sensors usually read lower, so it warns a little earlier. |
+| Battery | 35 °C | 40 °C | See below. |
+| SSD | 70 °C | 80 °C | Typical NVMe warning/critical composite temperatures (WCTEMP 70–80 °C, CCTEMP 80–85 °C). The drive starts throttling at WCTEMP ([Netdata NVMe guide](https://www.netdata.cloud/guides/nvme/nvme-thermal-throttling/)). |
+
+### Battery temperature: what is fine and what isn't
+
+- **Up to ~35 °C is fine.** Apple specifies a Mac operating range of **10–35 °C** and warns that heat above 35 °C can permanently reduce battery capacity ([iMore](https://www.imore.com/how-check-and-maintain-optimal-macbook-temperature), [Engadget](https://engadget.com/2242777/using-macbook-outside-consider-these-things/)). Cell makers list **15–35 °C** as the optimal charging range ([CMB spec](https://cmbatteries.com/cmb-lithium-battery-safety-precautions)), and research puts the optimum at 15–35 °C with faster ageing above it ([RRST-EE study](https://journal.iem.pub.ro/rrst-ee/article/download/1210/534/12620)). CleanMyMac treats **35 °C and above** as overheating ([MacPaw](https://macpaw.com/support/cleanmymac/knowledgebase/battery-temperature)), and AlDente's heat protection also stops charging at 35 °C by default ([AlDente](https://apphousekitchen.com/feature-explanation-heat-protection/)).
+- **35–40 °C: warning.** The battery still works, but it ages faster, especially while charging. A Mac that is too warm stops charging at 80 % ([iMore](https://www.imore.com/how-check-and-maintain-optimal-macbook-temperature)).
+- **40 °C and above: critical.** This is close to the end of the safe Li-ion charging window, which is 0–45 °C ([CMB spec](https://cmbatteries.com/cmb-lithium-battery-safety-precautions), [Elfa / BU-410](https://www.elfa.nl/wp-content/uploads/2023/08/Charging-at-high-and-low-temperatures.pdf)). A MacBook battery controller was observed stopping charging at **44 °C** ([Eclectic Light](https://eclecticlight.co/2021/01/30/why-your-laptop-mac-may-not-be-recharging/)).
 
 Temperature levels are stored in °C and shown in °F when that unit is selected.
