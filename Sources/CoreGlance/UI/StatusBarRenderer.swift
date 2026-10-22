@@ -50,11 +50,11 @@ enum StatusBarRenderer {
         case .gpuFrequency: return s.soc?.gpuMHz.map { "\(Int($0.rounded()))MHz" } ?? "–"
         case .memory:
             return prefs.memoryAsPercent ? Format.percent(s.memory.used / max(s.memory.total, 1))
-                                         : String(format: "%.1fG", s.memory.used / gb)
+                                         : String(format: "%.1fGB", s.memory.used / gb)
         case .memoryPressure: return s.memory.pressure >= 4 ? "Critical" : s.memory.pressure >= 2 ? "Warn" : "OK"
-        case .compressed: return String(format: "%.1fG", s.memory.compressed / gb)
-        case .swap: return String(format: "%.1fG", s.memory.swapUsed / gb)
-        case .disk: return s.disk.total > 0 ? String(format: "%.0fG", s.disk.free / 1e9) : "–"
+        case .compressed: return String(format: "%.1fGB", s.memory.compressed / gb)
+        case .swap: return String(format: "%.1fGB", s.memory.swapUsed / gb)
+        case .disk: return s.disk.total > 0 ? String(format: "%.0fGB", s.disk.free / 1e9) : "–"
         case .cpuTemperature: return Format.temperature(temperature(s.thermals.cpu, prefs))
         case .gpuTemperature: return Format.temperature(temperature(s.thermals.gpu, prefs))
         case .batteryTemperature: return Format.temperature(s.batteryTemperature)
