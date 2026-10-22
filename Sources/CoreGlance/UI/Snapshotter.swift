@@ -13,7 +13,7 @@ enum Snapshotter {
 
         let prefs = Preferences.shared
         let saved = prefs.enabled
-        prefs.enabled = [.cpu, .cpuFrequency, .gpu, .memory, .cpuTemperature, .gpuTemperature, .batteryTemperature]
+        prefs.enabled = Metric.allCases.filter([.cpu, .cpuFrequency, .cpuTemperature, .gpu, .gpuTemperature, .memory, .batteryTemperature].contains)
         defer { prefs.enabled = saved }
 
         let bar = StatusBarRenderer.image(for: monitor.snapshot, prefs: prefs)
