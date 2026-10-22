@@ -52,3 +52,21 @@ This file summarizes the research behind the implementation. Every value comes f
 - `powermetrics`: requires sudo.
 - Intel Power Gadget: discontinued, needs a kext.
 - Third-party SMC libraries: unnecessary, since the SMC reader here is about 100 lines.
+
+## Alert thresholds
+
+When **Color values at warning / critical levels** is on, a menu bar value turns orange at the warning level and red at the critical level. Only the value is colored, never the glyph. Every level can be changed in Settings → Alerts. The defaults, and where they come from:
+
+| Metric | Warning | Critical | Basis |
+|---|---|---|---|
+| CPU temperature | 90 °C | 100 °C | Apple doesn't publish a junction limit. Spec databases list M4 / M4 Pro / M4 Max at **TjMax 100 °C** ([cpu-monkey](https://www.cpu-monkey.com/en/compare_cpu-apple_m4_10_cpu-vs-apple_m4_max_16_cpu_40_gpu), [comparigon](https://comparigon.com/cpus/apple-m4-pro-14-core)). Users report throttling from about 100–107 °C, e.g. a base Mac mini M4 dropping from 4.46 to ~3.8 GHz ([MacRumors](https://forums.macrumors.com/threads/mac-mini-m4-thermals.2442671/)). |
+| GPU temperature | 85 °C | 100 °C | Same die and junction limit as the CPU. The GPU sensors usually read lower, so it warns a little earlier. |
+| Battery temperature | 40 °C | 44 °C | Apple advises against ambient temperatures above 35 °C. A battery controller was observed stopping charging when the gas-gauge sensor reached **44 °C** ([Eclectic Light](https://eclecticlight.co/2021/01/30/why-your-laptop-mac-may-not-be-recharging/)). AlDente's "Heat Protection" defaults to 35 °C ([AlDente](https://apphousekitchen.com/feature-explanation-heat-protection/)). Li-ion ageing speeds up noticeably above ~40 °C. |
+| SSD temperature | 70 °C | 80 °C | Typical NVMe warning/critical composite temperatures (WCTEMP 70–80 °C, CCTEMP 80–85 °C). The drive starts throttling at WCTEMP ([Netdata NVMe guide](https://www.netdata.cloud/guides/nvme/nvme-thermal-throttling/)). |
+| Free disk space | < 50 GB | < 20 GB | A macOS upgrade needs roughly 26–44 GB free (Apple's "empty space requirements"), and ~50 GB is the usual recommendation ([Apple Community](https://discussions.apple.com/thread/254167993)). Swap and updates fail when the disk is nearly full. |
+| CPU / GPU usage | 80 % | 95 % | Convention: sustained load near saturation. |
+| Swap used | 4 GB | 10 GB | Heuristic: a few GB of swap is normal on macOS, while double-digit GB means RAM is heavily oversubscribed. |
+| Battery charge | < 20 % | < 10 % | Matches the common low-battery and Low Power Mode prompts. Only applied while on battery. |
+| Memory used / pressure / compressed | — | — | Not a fixed number. These metrics use the kernel's own memory pressure level (`kern.memorystatus_vm_pressure_level`: 2 = warning, 4 = critical), the same signal Activity Monitor's pressure graph shows. |
+
+Temperature levels are stored in °C and shown in °F when that unit is selected.
