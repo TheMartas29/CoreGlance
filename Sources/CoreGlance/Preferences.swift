@@ -1,22 +1,52 @@
 import Foundation
 import ServiceManagement
 
+enum MetricGroup: String, CaseIterable {
+    case cpu = "CPU", gpu = "GPU", memory = "Memory & disk", temperature = "Temperatures", power = "Battery & power", network = "Network"
+}
+
+/// Everything that can be shown in the menu bar, in menu bar order.
 enum Metric: String, CaseIterable, Identifiable {
-    case cpu, cpuFrequency, gpu, memory, cpuTemperature, gpuTemperature, batteryTemperature, battery, power, network
+    case cpu, cpuCores, cpuFrequency, eFrequency
+    case gpu, gpuFrequency
+    case memory, memoryPressure, compressed, swap, disk
+    case cpuTemperature, gpuTemperature, batteryTemperature, ssdTemperature
+    case battery, power, fan
+    case network
 
     var id: String { rawValue }
+
+    var group: MetricGroup {
+        switch self {
+        case .cpu, .cpuCores, .cpuFrequency, .eFrequency: return .cpu
+        case .gpu, .gpuFrequency: return .gpu
+        case .memory, .memoryPressure, .compressed, .swap, .disk: return .memory
+        case .cpuTemperature, .gpuTemperature, .batteryTemperature, .ssdTemperature: return .temperature
+        case .battery, .power, .fan: return .power
+        case .network: return .network
+        }
+    }
 
     var title: String {
         switch self {
         case .cpu: return "CPU usage"
-        case .cpuFrequency: return "CPU frequency (P-cores)"
+        case .cpuCores: return "P-core / E-core usage"
+        case .cpuFrequency: return "P-core frequency"
+        case .eFrequency: return "E-core frequency"
         case .gpu: return "GPU usage"
+        case .gpuFrequency: return "GPU frequency"
         case .memory: return "Memory used"
+        case .memoryPressure: return "Memory pressure"
+        case .compressed: return "Compressed memory"
+        case .swap: return "Swap used"
+        case .disk: return "Free disk space"
         case .cpuTemperature: return "CPU temperature"
         case .gpuTemperature: return "GPU temperature"
         case .batteryTemperature: return "Battery temperature"
+        case .ssdTemperature: return "SSD temperature"
         case .battery: return "Battery charge"
         case .power: return "System power"
+        case .fan: return "Fan speed"
         case .network: return "Network speed"
         }
     }
@@ -25,36 +55,59 @@ enum Metric: String, CaseIterable, Identifiable {
     var symbol: String {
         switch self {
         case .cpu: return "cpu"
-        case .cpuFrequency: return "speedometer"
+        case .cpuCores: return "square.split.2x1"
+        case .cpuFrequency, .eFrequency: return "speedometer"
         case .gpu: return "cube.transparent"
+        case .gpuFrequency: return "cube"
         case .memory: return "memorychip"
-        case .cpuTemperature: return "thermometer.medium"
-        case .gpuTemperature: return "thermometer.low"
+        case .memoryPressure: return "gauge.with.dots.needle.50percent"
+        case .compressed: return "rectangle.compress.vertical"
+        case .swap: return "arrow.left.arrow.right"
+        case .disk: return "internaldrive"
+        case .cpuTemperature, .gpuTemperature, .ssdTemperature: return "thermometer.medium"
         case .batteryTemperature: return "minus.plus.batteryblock"
         case .battery: return "battery.75percent"
         case .power: return "bolt"
+        case .fan: return "fan"
         case .network: return "arrow.up.arrow.down"
         }
     }
 
-    /// Short caption used when glyphs are off, or to tell similar glyphs apart.
+    /// Tiny label next to the glyph where the glyph alone would be ambiguous,
+    /// or instead of the glyph when glyphs are turned off.
     var caption: String {
         switch self {
         case .cpu: return "CPU"
-        case .cpuFrequency: return "GHz"
+        case .cpuCores: return "P/E"
+        case .cpuFrequency: return "P GHz"
+        case .eFrequency: return "E GHz"
         case .gpu: return "GPU"
+        case .gpuFrequency: return "GPU MHz"
         case .memory: return "RAM"
+        case .memoryPressure: return "PRES"
+        case .compressed: return "ZIP"
+        case .swap: return "SWAP"
+        case .disk: return "DISK"
         case .cpuTemperature: return "CPU"
         case .gpuTemperature: return "GPU"
         case .batteryTemperature: return "BAT"
+        case .ssdTemperature: return "SSD"
         case .battery: return "BAT"
         case .power: return "PWR"
+        case .fan: return "FAN"
         case .network: return "NET"
         }
+    }
+
+    /// Whether the caption is drawn even when glyphs are on (the glyph is shared or unclear).
+    var needsCaption: Bool {
+        [.cpuFrequency, .eFrequency, .gpuFrequency, .cpuTemperature, .gpuTemperature, .ssdTemperature, .swap, .compressed].contains(self)
     }
 }
 
 enum TemperatureUnit: String, CaseIterable { case celsius, fahrenheit }
+enum TemperatureMode: String, CaseIterable { case average, hottest }
+enum BarFont: String, CaseIterable { case system, monospaced }
 
 /// User settings, persisted in UserDefaults.
 final class Preferences: ObservableObject {
@@ -64,18 +117,22 @@ final class Preferences: ObservableObject {
     @Published var enabled: [Metric] { didSet { defaults.set(enabled.map(\.rawValue), forKey: "metrics") } }
     @Published var interval: Double { didSet { defaults.set(interval, forKey: "interval") } }
     @Published var showGlyphs: Bool { didSet { defaults.set(showGlyphs, forKey: "showGlyphs") } }
-    @Published var captionTemperatures: Bool { didSet { defaults.set(captionTemperatures, forKey: "captionTemperatures") } }
+    @Published var showCaptions: Bool { didSet { defaults.set(showCaptions, forKey: "captionTemperatures") } }
     @Published var memoryAsPercent: Bool { didSet { defaults.set(memoryAsPercent, forKey: "memoryAsPercent") } }
     @Published var unit: TemperatureUnit { didSet { defaults.set(unit.rawValue, forKey: "unit") } }
+    @Published var temperatureMode: TemperatureMode { didSet { defaults.set(temperatureMode.rawValue, forKey: "temperatureMode") } }
+    @Published var font: BarFont { didSet { defaults.set(font.rawValue, forKey: "font") } }
 
     private init() {
         let stored = defaults.stringArray(forKey: "metrics")?.compactMap(Metric.init(rawValue:))
         enabled = stored ?? [.cpu, .gpu, .memory, .cpuTemperature, .batteryTemperature]
         interval = defaults.object(forKey: "interval") as? Double ?? 2
         showGlyphs = defaults.object(forKey: "showGlyphs") as? Bool ?? true
-        captionTemperatures = defaults.object(forKey: "captionTemperatures") as? Bool ?? true
+        showCaptions = defaults.object(forKey: "captionTemperatures") as? Bool ?? true
         memoryAsPercent = defaults.bool(forKey: "memoryAsPercent")
         unit = TemperatureUnit(rawValue: defaults.string(forKey: "unit") ?? "") ?? .celsius
+        temperatureMode = TemperatureMode(rawValue: defaults.string(forKey: "temperatureMode") ?? "") ?? .average
+        font = BarFont(rawValue: defaults.string(forKey: "font") ?? "") ?? .system
     }
 
     func isEnabled(_ m: Metric) -> Bool { enabled.contains(m) }
