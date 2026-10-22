@@ -1,0 +1,11 @@
+name: Feature request
+description: Suggest a new metric or improvement
+labels: [enhancement]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like?
+      description: If it is a new sensor, where would the data come from (if you know)?
+    validations:
+      required: true
