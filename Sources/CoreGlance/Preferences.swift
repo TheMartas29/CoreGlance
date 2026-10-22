@@ -79,7 +79,7 @@ enum Metric: String, CaseIterable, Identifiable {
         case .cpu: return "CPU"
         case .cpuCores: return "P/E"
         case .cpuFrequency: return "P GHz"
-        case .eFrequency: return "E GHz"
+        case .eFrequency: return "E"
         case .gpu: return "GPU"
         case .gpuFrequency: return "GPU MHz"
         case .memory: return "RAM"
@@ -101,7 +101,7 @@ enum Metric: String, CaseIterable, Identifiable {
     /// Whether the caption is drawn even when glyphs are on (the glyph is shared or unclear).
     var needsCaption: Bool {
         // Temperatures share the glyph of their component; the "°" tells them apart.
-        [.cpuFrequency, .eFrequency, .gpuFrequency, .swap, .compressed].contains(self)
+        [.eFrequency, .swap, .compressed].contains(self)
     }
 }
 

@@ -32,10 +32,10 @@ enum StatusBarRenderer {
         case .cpuCores: return ""
         case .cpuFrequency:
             let mhz = s.soc?.pCluster.mhz ?? s.nominalGHz.map { $0 * 1000 }
-            return mhz.map { String(format: "%.2f", $0 / 1000) } ?? "–"
-        case .eFrequency: return s.soc.map { String(format: "%.2f", $0.eCluster.mhz / 1000) } ?? "–"
+            return mhz.map { String(format: "%.2fGHz", $0 / 1000) } ?? "–"
+        case .eFrequency: return s.soc.map { String(format: "%.2fGHz", $0.eCluster.mhz / 1000) } ?? "–"
         case .gpu: return Format.percent(s.gpu)
-        case .gpuFrequency: return s.soc?.gpuMHz.map { "\(Int($0.rounded()))" } ?? "–"
+        case .gpuFrequency: return s.soc?.gpuMHz.map { "\(Int($0.rounded()))MHz" } ?? "–"
         case .memory:
             return prefs.memoryAsPercent ? Format.percent(s.memory.used / max(s.memory.total, 1))
                                          : String(format: "%.1fG", s.memory.used / gb)
