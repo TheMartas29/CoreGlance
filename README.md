@@ -52,7 +52,7 @@ Most menu bar monitors either pull in a pile of frameworks, need a privileged he
 - **Battery:** charge, charging state, time remaining, health, cycle count, charge/discharge power.
 - **Power:** whole-system watts, CPU, GPU, Neural Engine and DRAM power.
 - **Network** down/up speed, and **fan speed** on Macs that have fans.
-- **Alerts:** values turn orange or red at warning and critical levels. The defaults are [researched](RESEARCH.md#alert-thresholds) and can be adjusted.
+- **Temperature alerts:** CPU, GPU, battery and SSD temperatures turn orange or red at warning and critical levels. The defaults are [researched](RESEARCH.md#alert-thresholds) and can be adjusted.
 - **Fully configurable menu bar:** pick any combination of 19 metrics (only the ones your Mac can actually read are offered), with SF Symbol glyphs, optional labels, and SF Pro or SF Mono font.
 - **Native and light:** AppKit + SwiftUI, a ~1 MB universal binary, one background timer, light and dark mode, launch at login.
 

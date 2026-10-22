@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.1 — 2026-10-22
+
+- Fixed a crash: an appearance observer redrew the menu bar in an endless loop until the text system failed.
+- Fixed a crash when drawing colored values in SF Mono.
+- Alerts now color temperatures only. The battery defaults changed to 35 °C (warning) and 40 °C (critical), based on Apple's 10–35 °C operating range.
+
 ## 0.2.0 — 2026-10-22
 
 - Alerts: menu bar values turn orange or red at warning and critical levels. The defaults are researched (see RESEARCH.md) and adjustable in Settings.
