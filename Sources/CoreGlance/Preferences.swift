@@ -110,51 +110,26 @@ enum Metric: String, CaseIterable, Identifiable {
 
 enum Severity { case normal, warning, critical }
 
-/// Level at which a value turns orange (warning) and red (critical).
-/// For `lowerIsWorse` metrics (free disk, battery charge) the value is bad *below* the level.
+/// Temperature (°C) at which a value turns orange (warning) and red (critical).
 struct Threshold: Equatable {
     var warning: Double
     var critical: Double
 }
 
 extension Metric {
-    /// Defaults from vendor documentation and field reports; see RESEARCH.md ("Alert thresholds").
-    /// Memory metrics use macOS's own memory pressure instead and are not listed here.
+    /// Only temperatures are colored. Defaults come from vendor documentation and field
+    /// reports; see RESEARCH.md ("Alert thresholds").
     var defaultThreshold: Threshold? {
         switch self {
-        case .cpu, .gpu: return Threshold(warning: 80, critical: 95)                // % busy
-        case .cpuTemperature: return Threshold(warning: 90, critical: 100)          // °C, M-series TjMax ≈ 100
+        case .cpuTemperature: return Threshold(warning: 90, critical: 100)       // M-series TjMax ≈ 100 °C
         case .gpuTemperature: return Threshold(warning: 85, critical: 100)
-        case .batteryTemperature: return Threshold(warning: 40, critical: 44)       // charging pauses ≈ 44 °C
-        case .ssdTemperature: return Threshold(warning: 70, critical: 80)           // typical NVMe WCTEMP/CCTEMP
-        case .swap: return Threshold(warning: 4, critical: 10)                      // GB
-        case .disk: return Threshold(warning: 50, critical: 20)                     // GB free
-        case .battery: return Threshold(warning: 20, critical: 10)                  // % charge
+        case .batteryTemperature: return Threshold(warning: 35, critical: 40)    // Apple: 10–35 °C; charging stops ≈ 44 °C
+        case .ssdTemperature: return Threshold(warning: 70, critical: 80)        // typical NVMe WCTEMP/CCTEMP
         default: return nil
         }
     }
 
-    var lowerIsWorse: Bool { self == .disk || self == .battery }
-
     var isTemperature: Bool { [.cpuTemperature, .gpuTemperature, .batteryTemperature, .ssdTemperature].contains(self) }
-
-    /// Unit of the threshold values (temperatures are stored in °C).
-    var thresholdUnit: String {
-        switch self {
-        case .swap, .disk: return "GB"
-        case .cpuTemperature, .gpuTemperature, .batteryTemperature, .ssdTemperature: return "°C"
-        default: return "%"
-        }
-    }
-
-    var thresholdRange: ClosedRange<Double> {
-        switch self {
-        case .disk: return 0...1000
-        case .swap: return 0...128
-        case .cpuTemperature, .gpuTemperature, .batteryTemperature, .ssdTemperature: return 20...130
-        default: return 0...100
-        }
-    }
 }
 
 enum TemperatureUnit: String, CaseIterable { case celsius, fahrenheit }
@@ -210,12 +185,9 @@ final class Preferences: ObservableObject {
 
     func resetThresholds() { customThresholds = [:] }
 
-    /// Classifies a value (in the threshold's unit) against the user's or default levels.
+    /// Classifies a temperature (°C) against the user's or default levels.
     func severity(_ m: Metric, value: Double?) -> Severity {
         guard let value, let t = threshold(m) else { return .normal }
-        if m.lowerIsWorse {
-            return value <= t.critical ? .critical : value <= t.warning ? .warning : .normal
-        }
         return value >= t.critical ? .critical : value >= t.warning ? .warning : .normal
     }
 

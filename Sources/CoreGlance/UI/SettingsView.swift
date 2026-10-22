@@ -45,14 +45,12 @@ struct SettingsView: View {
 
             Divider()
             Text("Alerts").font(.subheadline.weight(.semibold))
-            Toggle("Color values at warning / critical levels", isOn: $prefs.colorize)
+            Toggle("Color temperatures at warning / critical levels", isOn: $prefs.colorize)
             if prefs.colorize {
                 VStack(alignment: .leading, spacing: 8) {
                     ForEach(Metric.allCases.filter { $0.defaultThreshold != nil && $0.isAvailable(in: snapshot) }) { metric in
                         ThresholdRow(metric: metric, prefs: prefs)
                     }
-                    Text("Memory uses macOS memory pressure (warning / critical).")
-                        .font(.caption).foregroundStyle(.secondary)
                     Button("Reset to defaults") { prefs.resetThresholds() }
                         .disabled(prefs.customThresholds.isEmpty)
                 }
@@ -74,20 +72,13 @@ struct SettingsView: View {
     }
 }
 
-/// Warning and critical level for one metric. Temperatures are stored in °C and shown in the chosen unit.
+/// Warning and critical temperature for one sensor, stored in °C and shown in the chosen unit.
 private struct ThresholdRow: View {
     let metric: Metric
     @ObservedObject var prefs: Preferences
 
-    private var fahrenheit: Bool { metric.isTemperature && prefs.unit == .fahrenheit }
-    private var step: Double {
-        switch metric {
-        case .disk: return 5
-        case .swap: return 1
-        default: return metric.isTemperature ? 1 : 5
-        }
-    }
-    private var unit: String { fahrenheit ? "°F" : metric.thresholdUnit }
+    private var fahrenheit: Bool { prefs.unit == .fahrenheit }
+    private var unit: String { fahrenheit ? "°F" : "°C" }
 
     private func shown(_ c: Double) -> Double { fahrenheit ? c * 9 / 5 + 32 : c }
     private func stored(_ v: Double) -> Double { fahrenheit ? (v - 32) * 5 / 9 : v }
@@ -97,8 +88,7 @@ private struct ThresholdRow: View {
             get: { shown(prefs.threshold(metric)?[keyPath: key] ?? 0) },
             set: { value in
                 guard var t = prefs.threshold(metric) else { return }
-                let r = metric.thresholdRange
-                t[keyPath: key] = min(max(stored(value), r.lowerBound), r.upperBound)
+                t[keyPath: key] = min(max(stored(value), 20), 130)
                 prefs.setThreshold(metric, t)
             }
         )
@@ -106,10 +96,7 @@ private struct ThresholdRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
-            HStack(spacing: 4) {
-                Text(metric.title)
-                if metric.lowerIsWorse { Text("(below)").foregroundStyle(.secondary) }
-            }
+            Text(metric.title)
             HStack(spacing: 14) {
                 level("Warning", .orange, binding(\.warning))
                 level("Critical", .red, binding(\.critical))
@@ -121,7 +108,7 @@ private struct ThresholdRow: View {
         HStack(spacing: 4) {
             Circle().fill(color).frame(width: 7, height: 7)
             Text("\(Int(value.wrappedValue.rounded())) \(unit)").monospacedDigit().frame(minWidth: 52, alignment: .leading)
-            Stepper(title, value: value, step: step).labelsHidden().controlSize(.small)
+            Stepper(title, value: value, step: 1).labelsHidden().controlSize(.small)
         }
         .help(title)
     }

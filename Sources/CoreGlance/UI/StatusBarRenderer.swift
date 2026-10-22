@@ -26,21 +26,13 @@ enum StatusBarRenderer {
         prefs.temperatureMode == .hottest ? r?.max : r?.average
     }
 
-    /// The metric's value in its threshold unit (%, °C, GB), for coloring.
+    /// Only temperatures are colored, against the user's or default thresholds (°C).
     static func severity(for metric: Metric, in s: Snapshot, prefs: Preferences) -> Severity {
         switch metric {
-        case .memory, .memoryPressure, .compressed:
-            // macOS's own memory pressure is the meaningful signal, not a fixed GB figure.
-            return s.memory.pressure >= 4 ? .critical : s.memory.pressure >= 2 ? .warning : .normal
-        case .cpu: return prefs.severity(metric, value: s.cpu * 100)
-        case .gpu: return prefs.severity(metric, value: s.gpu.map { $0 * 100 })
         case .cpuTemperature: return prefs.severity(metric, value: temperature(s.thermals.cpu, prefs))
         case .gpuTemperature: return prefs.severity(metric, value: temperature(s.thermals.gpu, prefs))
         case .batteryTemperature: return prefs.severity(metric, value: s.batteryTemperature)
         case .ssdTemperature: return prefs.severity(metric, value: s.thermals.ssd)
-        case .swap: return prefs.severity(metric, value: s.memory.swapUsed / 1_073_741_824)
-        case .disk: return prefs.severity(metric, value: s.disk.total > 0 ? s.disk.free / 1e9 : nil)
-        case .battery: return prefs.severity(metric, value: s.battery.present && !s.battery.pluggedIn ? s.battery.percent * 100 : nil)
         default: return .normal
         }
     }
