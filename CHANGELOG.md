@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Alerts: menu bar values turn orange or red at warning and critical levels. The defaults are researched (see RESEARCH.md) and adjustable in Settings.
+- Settings and the menu bar only offer metrics this Mac can actually read (e.g. no fan on a MacBook Air).
+- Metrics are ordered and grouped by hardware component.
+- CPU, GPU and SSD temperatures use the component's glyph. Frequencies show units ("3.05GHz").
+
 ## 0.1.1 — 2026-10-22
 
 - Even spacing between menu bar items: gaps are now measured from the painted pixels, so glyph side space and characters like "°" no longer make some gaps look wider.

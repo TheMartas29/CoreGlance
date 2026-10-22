@@ -31,6 +31,11 @@
   <img src="docs/popover-dark.png" width="300" alt="Popover, dark mode">
 </p>
 
+<details>
+<summary><b>Settings</b></summary>
+<p align="center"><img src="docs/settings-light.png" width="300" alt="Settings"></p>
+</details>
+
 ---
 
 ## Why
@@ -47,7 +52,8 @@ Most menu bar monitors either pull in a pile of frameworks, need a privileged he
 - **Battery:** charge, charging state, time remaining, health, cycle count, charge/discharge power.
 - **Power:** whole-system watts, CPU, GPU, Neural Engine and DRAM power.
 - **Network** down/up speed, and **fan speed** on Macs that have fans.
-- **Fully configurable menu bar:** pick any combination of 19 metrics, with SF Symbol glyphs, optional labels, and SF Pro or SF Mono font.
+- **Alerts:** values turn orange or red at warning and critical levels. The defaults are [researched](RESEARCH.md#alert-thresholds) and can be adjusted.
+- **Fully configurable menu bar:** pick any combination of 19 metrics (only the ones your Mac can actually read are offered), with SF Symbol glyphs, optional labels, and SF Pro or SF Mono font.
 - **Native and light:** AppKit + SwiftUI, a ~1 MB universal binary, one background timer, light and dark mode, launch at login.
 
 ## Install
@@ -86,7 +92,7 @@ To work on the code, `swift build && .build/debug/CoreGlance` runs it straight f
 ## Usage
 
 - **Click** the menu bar item to see every reading.
-- Click the **gear** to choose what is shown in the menu bar, plus font, glyphs, labels, units, temperature mode, refresh rate and launch at login.
+- Click the **gear** to choose what is shown in the menu bar, plus font, glyphs, labels, units, temperature mode, alert levels, refresh rate and launch at login.
 - **⌘-drag** the item to move it within the menu bar (standard macOS behaviour).
 
 ## Compatibility
