@@ -16,9 +16,10 @@ enum Snapshotter {
         prefs.enabled = Metric.allCases.filter([.cpu, .cpuFrequency, .cpuTemperature, .gpu, .gpuTemperature, .memory, .batteryTemperature].contains)
         defer { prefs.enabled = saved }
 
-        let bar = StatusBarRenderer.image(for: monitor.snapshot, prefs: prefs)
-        save(menuBar(bar, dark: false), dir, "menubar-light.png")
-        save(menuBar(bar, dark: true), dir, "menubar-dark.png")
+        for dark in [false, true] {
+            let bar = StatusBarRenderer.image(for: monitor.snapshot, prefs: prefs, dark: dark)
+            save(menuBar(bar, dark: dark), dir, dark ? "menubar-dark.png" : "menubar-light.png")
+        }
         for dark in [false, true] {
             let view = PopoverView(monitor: monitor, prefs: prefs, maxHeight: 2000, interactive: false)
                 .background(dark ? Color(white: 0.17) : Color(white: 0.97))
@@ -44,7 +45,8 @@ enum Snapshotter {
         NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
         (dark ? NSColor(white: 0.13, alpha: 1) : NSColor(white: 0.93, alpha: 1)).setFill()
         NSBezierPath(roundedRect: NSRect(origin: .zero, size: size), xRadius: 8, yRadius: 8).fill()
-        let tinted = NSImage(size: item.size, flipped: false) { r in
+        // Template images get tinted like the real menu bar; colored ones are drawn as is.
+        let tinted = !item.isTemplate ? item : NSImage(size: item.size, flipped: false) { r in
             item.draw(in: r)
             (dark ? NSColor.white : NSColor.black).set()
             r.fill(using: .sourceAtop)
