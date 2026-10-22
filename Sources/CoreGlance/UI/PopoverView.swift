@@ -5,6 +5,8 @@ struct PopoverView: View {
     @ObservedObject var prefs: Preferences
     /// Tallest the popover may get on the current screen; the content scrolls beyond it.
     var maxHeight: CGFloat = 700
+    /// False when rendered offscreen (--snapshot): AppKit-backed buttons cannot be drawn there.
+    var interactive = true
     @State private var showSettings = false
     @State private var contentHeight: CGFloat = 0
 
@@ -13,34 +15,47 @@ struct PopoverView: View {
             HStack {
                 Text(showSettings ? "Settings" : monitor.chip).font(.headline)
                 Spacer()
-                Button { showSettings.toggle() } label: {
-                    Image(systemName: showSettings ? "chevron.backward" : "gearshape")
+                if interactive {
+                    Button { showSettings.toggle() } label: {
+                        Image(systemName: showSettings ? "chevron.backward" : "gearshape")
+                    }
+                    .buttonStyle(.borderless)
+                    .help(showSettings ? "Back" : "Settings")
+                } else {
+                    Image(systemName: "gearshape").foregroundStyle(Color.accentColor)
                 }
-                .buttonStyle(.borderless)
-                .help(showSettings ? "Back" : "Settings")
             }
             Divider()
-            ScrollView {
-                Group {
-                    if showSettings {
-                        SettingsView(prefs: prefs)
-                    } else {
-                        StatsView(s: monitor.snapshot, prefs: prefs)
-                    }
+            if interactive {
+                ScrollView {
+                    page.background(GeometryReader { Color.clear.preference(key: HeightKey.self, value: $0.size.height) })
                 }
-                .background(GeometryReader { Color.clear.preference(key: HeightKey.self, value: $0.size.height) })
+                .frame(height: min(contentHeight, maxHeight))
+                .onPreferenceChange(HeightKey.self) { contentHeight = $0 }
+            } else {
+                page
             }
-            .frame(height: min(contentHeight, maxHeight))
-            .onPreferenceChange(HeightKey.self) { contentHeight = $0 }
             Divider()
             HStack {
                 Text("CoreGlance").font(.caption).foregroundStyle(.secondary)
                 Spacer()
-                Button("Quit") { NSApp.terminate(nil) }.buttonStyle(.borderless).keyboardShortcut("q")
+                if interactive {
+                    Button("Quit") { NSApp.terminate(nil) }.buttonStyle(.borderless).keyboardShortcut("q")
+                } else {
+                    Text("Quit").foregroundStyle(Color.accentColor)
+                }
             }
         }
         .padding(14)
         .frame(width: 320)
+    }
+
+    @ViewBuilder private var page: some View {
+        if showSettings {
+            SettingsView(prefs: prefs)
+        } else {
+            StatsView(s: monitor.snapshot, prefs: prefs)
+        }
     }
 }
 
@@ -77,6 +92,10 @@ private struct StatsView: View {
                 Row("Cached files", Format.gigabytes(s.memory.cached))
                 Row("Swap", "\(Format.gigabytes(s.memory.swapUsed)) of \(Format.gigabytes(s.memory.swapTotal))")
                 Row("Pressure", s.memory.pressure >= 4 ? "Critical" : s.memory.pressure >= 2 ? "Warning" : "Normal")
+            }
+            Section(title: "Disk", symbol: "internaldrive") {
+                Row("Free", String(format: "%.0f GB of %.0f GB", s.disk.free / 1e9, s.disk.total / 1e9))
+                Bar(value: 1 - s.disk.free / max(s.disk.total, 1), tint: s.disk.free < 20e9 ? .orange : .accentColor)
             }
             if s.battery.present {
                 Section(title: "Battery", symbol: "battery.75percent") {
