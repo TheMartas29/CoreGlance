@@ -147,7 +147,7 @@ enum StatusBarRenderer {
     static func image(for s: Snapshot, prefs: Preferences) -> NSImage? {
         let font = prefs.font
         let height = NSStatusBar.system.thickness
-        let groups = prefs.enabled.map { parts(for: $0, in: s, prefs: prefs).map { ($0, ink($0, height: height, font: font)) } }
+        let groups = prefs.enabled.filter { $0.isAvailable(in: s) }.map { parts(for: $0, in: s, prefs: prefs).map { ($0, ink($0, height: height, font: font)) } }
         guard !groups.isEmpty else { return nil }
         let width = groups.map { g in g.map { $0.1.width }.reduce(0, +) + innerGap * CGFloat(g.count - 1) }.reduce(0, +)
             + groupGap * CGFloat(groups.count - 1)

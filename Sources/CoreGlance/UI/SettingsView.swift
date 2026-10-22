@@ -2,14 +2,16 @@ import SwiftUI
 
 struct SettingsView: View {
     @ObservedObject var prefs: Preferences
+    /// Latest readings; only metrics this Mac can deliver are offered.
+    let snapshot: Snapshot
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Show in menu bar").font(.subheadline.weight(.semibold))
-            ForEach(MetricGroup.allCases, id: \.self) { group in
+            ForEach(MetricGroup.allCases.filter { !metrics(in: $0).isEmpty }, id: \.self) { group in
                 VStack(alignment: .leading, spacing: 3) {
                     Text(group.rawValue.uppercased()).font(.caption2.weight(.semibold)).foregroundStyle(.secondary)
-                    ForEach(Metric.allCases.filter { $0.group == group }) { metric in
+                    ForEach(metrics(in: group)) { metric in
                         Toggle(isOn: Binding(get: { prefs.isEnabled(metric) }, set: { prefs.set(metric, $0) })) {
                             Label(metric.title, systemImage: metric.symbol)
                         }
@@ -50,5 +52,9 @@ struct SettingsView: View {
         }
         .toggleStyle(.checkbox)
         .font(.callout)
+    }
+
+    private func metrics(in group: MetricGroup) -> [Metric] {
+        Metric.allCases.filter { $0.group == group && $0.isAvailable(in: snapshot) }
     }
 }
