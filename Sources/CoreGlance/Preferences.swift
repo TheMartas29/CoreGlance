@@ -2,27 +2,30 @@ import Foundation
 import ServiceManagement
 
 enum MetricGroup: String, CaseIterable {
-    case cpu = "CPU", gpu = "GPU", memory = "Memory & disk", temperature = "Temperatures", power = "Battery & power", network = "Network"
+    case cpu = "CPU", gpu = "GPU", memory = "Memory", disk = "Disk", battery = "Battery", system = "System", network = "Network"
 }
 
-/// Everything that can be shown in the menu bar, in menu bar order.
+/// Everything that can be shown in the menu bar, in menu bar order: all values of one
+/// component sit next to each other (CPU usage, clocks and temperature, then GPU, …).
 enum Metric: String, CaseIterable, Identifiable {
-    case cpu, cpuCores, cpuFrequency, eFrequency
-    case gpu, gpuFrequency
-    case memory, memoryPressure, compressed, swap, disk
-    case cpuTemperature, gpuTemperature, batteryTemperature, ssdTemperature
-    case battery, power, fan
+    case cpu, cpuCores, cpuFrequency, eFrequency, cpuTemperature
+    case gpu, gpuFrequency, gpuTemperature
+    case memory, memoryPressure, compressed, swap
+    case disk, ssdTemperature
+    case battery, batteryTemperature
+    case power, fan
     case network
 
     var id: String { rawValue }
 
     var group: MetricGroup {
         switch self {
-        case .cpu, .cpuCores, .cpuFrequency, .eFrequency: return .cpu
-        case .gpu, .gpuFrequency: return .gpu
-        case .memory, .memoryPressure, .compressed, .swap, .disk: return .memory
-        case .cpuTemperature, .gpuTemperature, .batteryTemperature, .ssdTemperature: return .temperature
-        case .battery, .power, .fan: return .power
+        case .cpu, .cpuCores, .cpuFrequency, .eFrequency, .cpuTemperature: return .cpu
+        case .gpu, .gpuFrequency, .gpuTemperature: return .gpu
+        case .memory, .memoryPressure, .compressed, .swap: return .memory
+        case .disk, .ssdTemperature: return .disk
+        case .battery, .batteryTemperature: return .battery
+        case .power, .fan: return .system
         case .network: return .network
         }
     }
@@ -125,7 +128,9 @@ final class Preferences: ObservableObject {
 
     private init() {
         let stored = defaults.stringArray(forKey: "metrics")?.compactMap(Metric.init(rawValue:))
-        enabled = stored ?? [.cpu, .gpu, .memory, .cpuTemperature, .batteryTemperature]
+        let initial = stored ?? [.cpu, .cpuTemperature, .gpu, .memory, .batteryTemperature]
+        // Saved lists from older versions may be in a different order; always use the catalogue order.
+        enabled = Metric.allCases.filter(initial.contains)
         interval = defaults.object(forKey: "interval") as? Double ?? 2
         showGlyphs = defaults.object(forKey: "showGlyphs") as? Bool ?? true
         showCaptions = defaults.object(forKey: "captionTemperatures") as? Bool ?? true
