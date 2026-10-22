@@ -2,10 +2,17 @@ import AppKit
 
 /// Draws the menu bar item as one template image so macOS handles light/dark/highlight tinting.
 enum StatusBarRenderer {
-    private static let valueFont = NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .regular)
-    private static let captionFont = NSFont.systemFont(ofSize: 8, weight: .semibold)
-    private static let stackedFont = NSFont.monospacedDigitSystemFont(ofSize: 9, weight: .regular)
-    private static let symbolConfig = NSImage.SymbolConfiguration(pointSize: 12, weight: .regular)
+    // Fixed sizes chosen to fit the 22–24 pt menu bar, including notched MacBooks.
+    private static let valueSize: CGFloat = 11
+    private static let captionFont = NSFont.systemFont(ofSize: 7, weight: .semibold)
+    private static let symbolConfig = NSImage.SymbolConfiguration(pointSize: 11, weight: .regular)
+    private static let innerGap: CGFloat = 4
+    private static let groupGap: CGFloat = 14
+
+    private static func valueFont(_ style: BarFont, size: CGFloat = valueSize) -> NSFont {
+        style == .monospaced ? .monospacedSystemFont(ofSize: size, weight: .regular)
+                             : .monospacedDigitSystemFont(ofSize: size, weight: .regular)
+    }
 
     private enum Part {
         case glyph(NSImage)
@@ -14,23 +21,39 @@ enum StatusBarRenderer {
         case stacked(String, String)
     }
 
+    private static func temperature(_ r: Reading?, _ prefs: Preferences) -> Double? {
+        prefs.temperatureMode == .hottest ? r?.max : r?.average
+    }
+
     static func value(for metric: Metric, in s: Snapshot, prefs: Preferences) -> String {
+        let gb = 1_073_741_824.0
         switch metric {
-        case .cpu: return Format.percent(s.cpu, width: 3)
-        case .gpu: return Format.percent(s.gpu, width: 3)
+        case .cpu: return Format.percent(s.cpu)
+        case .cpuCores: return ""
         case .cpuFrequency:
             let mhz = s.soc?.pCluster.mhz ?? s.nominalGHz.map { $0 * 1000 }
             return mhz.map { String(format: "%.2f", $0 / 1000) } ?? "–"
+        case .eFrequency: return s.soc.map { String(format: "%.2f", $0.eCluster.mhz / 1000) } ?? "–"
+        case .gpu: return Format.percent(s.gpu)
+        case .gpuFrequency: return s.soc?.gpuMHz.map { "\(Int($0.rounded()))" } ?? "–"
         case .memory:
-            return prefs.memoryAsPercent ? Format.percent(s.memory.used / max(s.memory.total, 1), width: 3)
-                                         : String(format: "%.1fG", s.memory.used / 1_073_741_824)
-        case .cpuTemperature: return Format.pad(Format.temperature(s.thermals.cpu?.average), 4)
-        case .gpuTemperature: return Format.pad(Format.temperature(s.thermals.gpu?.average), 4)
-        case .batteryTemperature: return Format.pad(Format.temperature(s.batteryTemperature), 4)
-        case .battery: return s.battery.present ? Format.percent(s.battery.percent, width: 3) : "–"
+            return prefs.memoryAsPercent ? Format.percent(s.memory.used / max(s.memory.total, 1))
+                                         : String(format: "%.1fG", s.memory.used / gb)
+        case .memoryPressure: return s.memory.pressure >= 4 ? "Critical" : s.memory.pressure >= 2 ? "Warn" : "OK"
+        case .compressed: return String(format: "%.1fG", s.memory.compressed / gb)
+        case .swap: return String(format: "%.1fG", s.memory.swapUsed / gb)
+        case .disk: return s.disk.total > 0 ? String(format: "%.0fG", s.disk.free / 1e9) : "–"
+        case .cpuTemperature: return Format.temperature(temperature(s.thermals.cpu, prefs))
+        case .gpuTemperature: return Format.temperature(temperature(s.thermals.gpu, prefs))
+        case .batteryTemperature: return Format.temperature(s.batteryTemperature)
+        case .ssdTemperature: return Format.temperature(s.thermals.ssd)
+        case .battery: return s.battery.present ? Format.percent(s.battery.percent) : "–"
         case .power:
             let w = s.thermals.systemWatts ?? s.battery.systemPowerIn
             return w.map { String(format: "%.1fW", $0) } ?? "–"
+        case .fan:
+            let rpm = s.thermals.fans.map(\.rpm).max()
+            return rpm.map { "\(Int($0))" } ?? "–"
         case .network: return ""
         }
     }
@@ -39,15 +62,16 @@ enum StatusBarRenderer {
         var parts: [Part] = []
         if prefs.showGlyphs, let image = glyph(metric, s) {
             parts.append(.glyph(image))
-            let isTemp = [.cpuTemperature, .gpuTemperature].contains(metric)
-            if isTemp && prefs.captionTemperatures { parts.append(.caption(metric.caption)) }
-            if metric == .cpuFrequency { parts.append(.caption("GHz")) }
+            if metric.needsCaption && prefs.showCaptions { parts.append(.caption(metric.caption)) }
         } else if metric != .network {
             parts.append(.caption(metric.caption))
         }
-        if metric == .network {
-            parts.append(.stacked("↑" + Format.pad(Format.rate(s.network.up), 4), "↓" + Format.pad(Format.rate(s.network.down), 4)))
-        } else {
+        switch metric {
+        case .network:
+            parts.append(.stacked("↑" + Format.rate(s.network.up), "↓" + Format.rate(s.network.down)))
+        case .cpuCores:
+            parts.append(.stacked("P " + Format.percent(s.cpuP), "E " + Format.percent(s.cpuE)))
+        default:
             parts.append(.value(value(for: metric, in: s, prefs: prefs)))
         }
         return parts
@@ -63,42 +87,43 @@ enum StatusBarRenderer {
         return NSImage(systemSymbolName: name, accessibilityDescription: metric.title)?.withSymbolConfiguration(symbolConfig)
     }
 
-    private static func size(_ part: Part) -> NSSize {
+    private static func size(_ part: Part, _ font: BarFont) -> NSSize {
         switch part {
         case .glyph(let i): return i.size
         case .caption(let t): return (t as NSString).size(withAttributes: [.font: captionFont])
-        case .value(let t): return (t as NSString).size(withAttributes: [.font: valueFont])
+        case .value(let t): return (t as NSString).size(withAttributes: [.font: valueFont(font)])
         case .stacked(let a, let b):
-            let sa = (a as NSString).size(withAttributes: [.font: stackedFont]), sb = (b as NSString).size(withAttributes: [.font: stackedFont])
+            let f = valueFont(font, size: 8.5)
+            let sa = (a as NSString).size(withAttributes: [.font: f]), sb = (b as NSString).size(withAttributes: [.font: f])
             return NSSize(width: max(sa.width, sb.width), height: sa.height + sb.height)
         }
     }
 
     static func image(for s: Snapshot, prefs: Preferences) -> NSImage? {
+        let font = prefs.font
         let groups = prefs.enabled.map { parts(for: $0, in: s, prefs: prefs) }
         guard !groups.isEmpty else { return nil }
         let height = NSStatusBar.system.thickness
-        let innerGap: CGFloat = 2, groupGap: CGFloat = 8
-        let width = groups.map { g in g.map { size($0).width }.reduce(0, +) + innerGap * CGFloat(g.count - 1) }.reduce(0, +)
+        let width = groups.map { g in g.map { size($0, font).width }.reduce(0, +) + innerGap * CGFloat(g.count - 1) }.reduce(0, +)
             + groupGap * CGFloat(groups.count - 1)
 
         let image = NSImage(size: NSSize(width: ceil(width), height: height), flipped: false) { _ in
             var x: CGFloat = 0
             for group in groups {
                 for part in group {
-                    let sz = size(part)
+                    let sz = size(part, font)
+                    let y = ((height - sz.height) / 2).rounded()
                     switch part {
                     case .glyph(let i):
-                        i.draw(in: NSRect(x: x, y: (height - sz.height) / 2, width: sz.width, height: sz.height))
+                        i.draw(in: NSRect(x: x, y: y, width: sz.width, height: sz.height))
                     case .caption(let t):
-                        (t as NSString).draw(at: NSPoint(x: x, y: (height - sz.height) / 2), withAttributes: [.font: captionFont, .foregroundColor: NSColor.black])
+                        (t as NSString).draw(at: NSPoint(x: x, y: y), withAttributes: [.font: captionFont, .foregroundColor: NSColor.black])
                     case .value(let t):
-                        (t as NSString).draw(at: NSPoint(x: x, y: (height - sz.height) / 2), withAttributes: [.font: valueFont, .foregroundColor: NSColor.black])
+                        (t as NSString).draw(at: NSPoint(x: x, y: y), withAttributes: [.font: valueFont(font), .foregroundColor: NSColor.black])
                     case .stacked(let top, let bottom):
-                        let attrs: [NSAttributedString.Key: Any] = [.font: stackedFont, .foregroundColor: NSColor.black]
-                        let line = sz.height / 2
+                        let attrs: [NSAttributedString.Key: Any] = [.font: valueFont(font, size: 8.5), .foregroundColor: NSColor.black]
                         (top as NSString).draw(at: NSPoint(x: x, y: height / 2 - 1), withAttributes: attrs)
-                        (bottom as NSString).draw(at: NSPoint(x: x, y: height / 2 - line + 1), withAttributes: attrs)
+                        (bottom as NSString).draw(at: NSPoint(x: x, y: height / 2 - sz.height / 2 + 1), withAttributes: attrs)
                     }
                     x += sz.width + innerGap
                 }
