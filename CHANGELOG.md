@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.1 — 2026-10-22
+
+- Even spacing between menu bar items: gaps are now measured from the painted pixels, so glyph side space and characters like "°" no longer make some gaps look wider.
+
 ## 0.1.0 — 2026-10-22
 
 First public release.
