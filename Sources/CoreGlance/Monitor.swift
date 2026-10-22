@@ -14,9 +14,35 @@ struct Snapshot {
     var battery = BatteryStats()
     var network = NetworkStats()
     var disk = DiskStats()
+    /// False until the first real reading; until then every metric counts as available.
+    var sampled = false
 
     /// Battery temperature: the gas gauge value, falling back to the SMC battery sensors.
     var batteryTemperature: Double? { battery.temperature ?? thermals.battery }
+}
+
+extension Metric {
+    /// Whether this Mac actually delivers a value for the metric (no fan on a MacBook Air,
+    /// no battery on a Mac mini…). Unavailable metrics are hidden from settings and the bar.
+    func isAvailable(in s: Snapshot) -> Bool {
+        guard s.sampled else { return true }
+        switch self {
+        case .cpu, .memory, .memoryPressure, .compressed, .swap, .network: return true
+        case .cpuCores: return s.cpuP != nil && s.cpuE != nil
+        case .cpuFrequency: return s.soc != nil || s.nominalGHz != nil
+        case .eFrequency: return s.soc != nil && s.cpuE != nil
+        case .gpu: return s.gpu != nil
+        case .gpuFrequency: return s.soc?.gpuMHz != nil
+        case .disk: return s.disk.total > 0
+        case .cpuTemperature: return s.thermals.cpu != nil
+        case .gpuTemperature: return s.thermals.gpu != nil
+        case .batteryTemperature: return s.batteryTemperature != nil
+        case .ssdTemperature: return s.thermals.ssd != nil
+        case .battery: return s.battery.present
+        case .power: return s.thermals.systemWatts != nil || s.battery.systemPowerIn != nil
+        case .fan: return !s.thermals.fans.isEmpty
+        }
+    }
 }
 
 /// Polls every sensor on a background queue and publishes snapshots on the main thread.
@@ -60,6 +86,7 @@ final class Monitor: ObservableObject {
 
     private func read() -> Snapshot {
         var s = Snapshot()
+        s.sampled = true
         let loads = cpuLoad.sample()
         s.cores = loads.enumerated().map { (cpuLoad.kinds.indices.contains($0.offset) ? cpuLoad.kinds[$0.offset] : .unknown, $0.element) }
         s.cpu = loads.isEmpty ? 0 : loads.reduce(0, +) / Double(loads.count)
