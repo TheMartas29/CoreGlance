@@ -37,7 +37,12 @@ struct PopoverView: View {
             }
             Divider()
             HStack {
-                Text("CoreGlance").font(.caption).foregroundStyle(.secondary)
+                Link(destination: URL(string: "https://github.com/TheMartas29/CoreGlance")!) {
+                    Text(appTitle).underline()
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .help("Open CoreGlance on GitHub")
                 Spacer()
                 if interactive {
                     Button("Quit") { NSApp.terminate(nil) }.buttonStyle(.borderless).keyboardShortcut("q")
@@ -48,6 +53,12 @@ struct PopoverView: View {
         }
         .padding(14)
         .frame(width: 320)
+    }
+
+    /// "CoreGlance v0.2.2"; the version is missing when run outside the app bundle (swift run).
+    private var appTitle: String {
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
+        return version.map { "CoreGlance v\($0)" } ?? "CoreGlance"
     }
 
     @ViewBuilder private var page: some View {
