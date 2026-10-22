@@ -9,6 +9,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let popover = NSPopover()
     private var cancellables: Set<AnyCancellable> = []
     private var appearanceObservation: NSKeyValueObservation?
+    private var lastDark: Bool?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -27,15 +28,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }.store(in: &cancellables)
         prefs.$interval.removeDuplicates().sink { [weak self] in self?.monitor.start(interval: $0) }.store(in: &cancellables)
         // Colored values are not template-tinted, so redraw when the menu bar flips light/dark.
-        appearanceObservation = statusItem.button?.observe(\.effectiveAppearance) { [weak self] _, _ in
-            DispatchQueue.main.async { self?.render() }
+        // effectiveAppearance also fires every time the button's image is replaced, so only
+        // react to a real light/dark flip; rendering unconditionally here loops forever.
+        appearanceObservation = statusItem.button?.observe(\.effectiveAppearance) { [weak self] button, _ in
+            let dark = Self.isDark(button)
+            DispatchQueue.main.async {
+                guard let self, dark != self.lastDark else { return }
+                self.render()
+            }
         }
         render()
     }
 
     private func render() {
         guard let button = statusItem.button else { return }
-        let dark = button.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+        let dark = Self.isDark(button)
+        lastDark = dark
         if let image = StatusBarRenderer.image(for: monitor.snapshot, prefs: prefs, dark: dark) {
             button.image = image
             button.title = ""
@@ -60,5 +68,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             popover.contentViewController?.view.window?.makeKey()
             NSApp.activate(ignoringOtherApps: true)
         }
+    }
+
+    private static func isDark(_ button: NSStatusBarButton) -> Bool {
+        button.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
     }
 }
