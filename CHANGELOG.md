@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.0 — 2026-10-22
 
 - Alerts: menu bar values turn orange or red at warning and critical levels. The defaults are researched (see RESEARCH.md) and adjustable in Settings.
 - Settings and the menu bar only offer metrics this Mac can actually read (e.g. no fan on a MacBook Air).
