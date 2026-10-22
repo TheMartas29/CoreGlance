@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.2 — 2026-10-22
+
+- Swap and compressed memory show only their glyph (no "SWAP"/"ZIP" label). Swap uses up/down arrows, and network uses the globe glyph.
+- Memory, swap, compressed and disk values read "GB" instead of "G".
+
 ## 0.2.1 — 2026-10-22
 
 - Fixed a crash: an appearance observer redrew the menu bar in an endless loop until the text system failed.
