@@ -18,7 +18,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         popover.behavior = .transient
         popover.animates = false
-        popover.contentViewController = NSHostingController(rootView: PopoverView(monitor: monitor, prefs: prefs))
 
         monitor.$snapshot.receive(on: RunLoop.main).sink { [weak self] _ in self?.render() }.store(in: &cancellables)
         prefs.objectWillChange.receive(on: RunLoop.main).sink { [weak self] in
@@ -45,6 +44,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if popover.isShown {
             popover.performClose(nil)
         } else {
+            // Rebuilt on every open so the height cap matches the screen the menu bar is on.
+            let screen = button.window?.screen ?? NSScreen.main
+            let maxHeight = (screen?.visibleFrame.height ?? 800) - 110  // header, footer, padding
+            let host = NSHostingController(rootView: PopoverView(monitor: monitor, prefs: prefs, maxHeight: maxHeight))
+            host.sizingOptions = .preferredContentSize
+            popover.contentViewController = host
             popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
             popover.contentViewController?.view.window?.makeKey()
             NSApp.activate(ignoringOtherApps: true)

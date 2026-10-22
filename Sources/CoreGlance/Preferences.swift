@@ -26,7 +26,7 @@ enum Metric: String, CaseIterable, Identifiable {
         switch self {
         case .cpu: return "cpu"
         case .cpuFrequency: return "speedometer"
-        case .gpu: return "display"
+        case .gpu: return "cube.transparent"
         case .memory: return "memorychip"
         case .cpuTemperature: return "thermometer.medium"
         case .gpuTemperature: return "thermometer.low"

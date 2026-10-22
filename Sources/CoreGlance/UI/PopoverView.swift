@@ -3,7 +3,10 @@ import SwiftUI
 struct PopoverView: View {
     @ObservedObject var monitor: Monitor
     @ObservedObject var prefs: Preferences
+    /// Tallest the popover may get on the current screen; the content scrolls beyond it.
+    var maxHeight: CGFloat = 700
     @State private var showSettings = false
+    @State private var contentHeight: CGFloat = 0
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -17,11 +20,18 @@ struct PopoverView: View {
                 .help(showSettings ? "Back" : "Settings")
             }
             Divider()
-            if showSettings {
-                SettingsView(prefs: prefs)
-            } else {
-                StatsView(s: monitor.snapshot, prefs: prefs)
+            ScrollView {
+                Group {
+                    if showSettings {
+                        SettingsView(prefs: prefs)
+                    } else {
+                        StatsView(s: monitor.snapshot, prefs: prefs)
+                    }
+                }
+                .background(GeometryReader { Color.clear.preference(key: HeightKey.self, value: $0.size.height) })
             }
+            .frame(height: min(contentHeight, maxHeight))
+            .onPreferenceChange(HeightKey.self) { contentHeight = $0 }
             Divider()
             HStack {
                 Text("CoreGlance").font(.caption).foregroundStyle(.secondary)
@@ -32,6 +42,11 @@ struct PopoverView: View {
         .padding(14)
         .frame(width: 320)
     }
+}
+
+private struct HeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
 }
 
 private struct StatsView: View {
@@ -49,7 +64,7 @@ private struct StatsView: View {
                 Row("Temperature", temps(s.thermals.cpu))
                 if let w = s.soc?.cpuWatts { Row("Power", Format.watts(w)) }
             }
-            Section(title: "GPU", symbol: "display") {
+            Section(title: "GPU", symbol: Metric.gpu.symbol) {
                 Row("Usage", Format.percent(s.gpu))
                 if let mhz = s.soc?.gpuMHz { Row("Frequency", Format.mhz(mhz) + (s.soc?.gpuMaxMHz.map { " / \(Int($0))" } ?? "")) }
                 Row("Temperature", temps(s.thermals.gpu))
