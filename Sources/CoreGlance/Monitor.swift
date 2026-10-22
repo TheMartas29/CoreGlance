@@ -13,6 +13,7 @@ struct Snapshot {
     var thermals = ThermalStats()
     var battery = BatteryStats()
     var network = NetworkStats()
+    var disk = DiskStats()
 
     /// Battery temperature: the gas gauge value, falling back to the SMC battery sensors.
     var batteryTemperature: Double? { battery.temperature ?? thermals.battery }
@@ -75,6 +76,7 @@ final class Monitor: ObservableObject {
         s.thermals = thermals?.sample() ?? ThermalStats()
         s.battery = BatteryReader.read()
         s.network = network.sample()
+        s.disk = DiskReader.read()
         return s
     }
 

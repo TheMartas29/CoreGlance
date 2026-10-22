@@ -195,3 +195,16 @@ final class NetworkReader {
         return stats
     }
 }
+
+// MARK: - Disk
+
+struct DiskStats { var free: Double = 0; var total: Double = 0 }
+
+enum DiskReader {
+    /// Free space on the boot volume as Finder reports it (includes purgeable space).
+    static func read() -> DiskStats {
+        let keys: Set<URLResourceKey> = [.volumeAvailableCapacityForImportantUsageKey, .volumeTotalCapacityKey]
+        guard let v = try? URL(fileURLWithPath: "/").resourceValues(forKeys: keys) else { return DiskStats() }
+        return DiskStats(free: Double(v.volumeAvailableCapacityForImportantUsage ?? 0), total: Double(v.volumeTotalCapacity ?? 0))
+    }
+}
