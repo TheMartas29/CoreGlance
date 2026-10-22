@@ -99,33 +99,65 @@ enum StatusBarRenderer {
         }
     }
 
+    private static func draw(_ part: Part, x: CGFloat, height: CGFloat, font: BarFont) {
+        let sz = size(part, font)
+        let y = ((height - sz.height) / 2).rounded()
+        switch part {
+        case .glyph(let i):
+            i.draw(in: NSRect(x: x, y: y, width: sz.width, height: sz.height))
+        case .caption(let t):
+            (t as NSString).draw(at: NSPoint(x: x, y: y), withAttributes: [.font: captionFont, .foregroundColor: NSColor.black])
+        case .value(let t):
+            (t as NSString).draw(at: NSPoint(x: x, y: y), withAttributes: [.font: valueFont(font), .foregroundColor: NSColor.black])
+        case .stacked(let top, let bottom):
+            let attrs: [NSAttributedString.Key: Any] = [.font: valueFont(font, size: 8.5), .foregroundColor: NSColor.black]
+            (top as NSString).draw(at: NSPoint(x: x, y: height / 2 - 1), withAttributes: attrs)
+            (bottom as NSString).draw(at: NSPoint(x: x, y: height / 2 - sz.height / 2 + 1), withAttributes: attrs)
+        }
+    }
+
+    /// Horizontal extent of the pixels a part actually paints. SF Symbols and characters
+    /// like "°" carry different amounts of built-in side space, so spacing based on their
+    /// layout boxes looks uneven; spacing based on ink looks even.
+    private static func ink(_ part: Part, height: CGFloat, font: BarFont) -> (minX: CGFloat, width: CGFloat) {
+        let sz = size(part, font)
+        let scale: CGFloat = 2, pad: CGFloat = 4
+        let w = Int(ceil((sz.width + pad * 2) * scale)), h = Int(ceil(height * scale))
+        guard let rep = NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: w, pixelsHigh: h, bitsPerSample: 8, samplesPerPixel: 4,
+                                         hasAlpha: true, isPlanar: false, colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0),
+              let data = rep.bitmapData else { return (0, sz.width) }
+        rep.size = NSSize(width: CGFloat(w) / scale, height: height)
+        NSGraphicsContext.saveGraphicsState()
+        NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
+        draw(part, x: pad, height: height, font: font)
+        NSGraphicsContext.restoreGraphicsState()
+
+        var minCol = w, maxCol = -1
+        for row in 0..<h {
+            let line = data + row * rep.bytesPerRow
+            for col in 0..<w where line[col * 4 + 3] > 24 {
+                minCol = min(minCol, col)
+                maxCol = max(maxCol, col)
+            }
+        }
+        guard maxCol >= minCol else { return (0, sz.width) }
+        return (CGFloat(minCol) / scale - pad, CGFloat(maxCol - minCol + 1) / scale)
+    }
+
     static func image(for s: Snapshot, prefs: Preferences) -> NSImage? {
         let font = prefs.font
-        let groups = prefs.enabled.map { parts(for: $0, in: s, prefs: prefs) }
-        guard !groups.isEmpty else { return nil }
         let height = NSStatusBar.system.thickness
-        let width = groups.map { g in g.map { size($0, font).width }.reduce(0, +) + innerGap * CGFloat(g.count - 1) }.reduce(0, +)
+        let groups = prefs.enabled.map { parts(for: $0, in: s, prefs: prefs).map { ($0, ink($0, height: height, font: font)) } }
+        guard !groups.isEmpty else { return nil }
+        let width = groups.map { g in g.map { $0.1.width }.reduce(0, +) + innerGap * CGFloat(g.count - 1) }.reduce(0, +)
             + groupGap * CGFloat(groups.count - 1)
 
         let image = NSImage(size: NSSize(width: ceil(width), height: height), flipped: false) { _ in
             var x: CGFloat = 0
             for group in groups {
-                for part in group {
-                    let sz = size(part, font)
-                    let y = ((height - sz.height) / 2).rounded()
-                    switch part {
-                    case .glyph(let i):
-                        i.draw(in: NSRect(x: x, y: y, width: sz.width, height: sz.height))
-                    case .caption(let t):
-                        (t as NSString).draw(at: NSPoint(x: x, y: y), withAttributes: [.font: captionFont, .foregroundColor: NSColor.black])
-                    case .value(let t):
-                        (t as NSString).draw(at: NSPoint(x: x, y: y), withAttributes: [.font: valueFont(font), .foregroundColor: NSColor.black])
-                    case .stacked(let top, let bottom):
-                        let attrs: [NSAttributedString.Key: Any] = [.font: valueFont(font, size: 8.5), .foregroundColor: NSColor.black]
-                        (top as NSString).draw(at: NSPoint(x: x, y: height / 2 - 1), withAttributes: attrs)
-                        (bottom as NSString).draw(at: NSPoint(x: x, y: height / 2 - sz.height / 2 + 1), withAttributes: attrs)
-                    }
-                    x += sz.width + innerGap
+                for (part, ink) in group {
+                    draw(part, x: x - ink.minX, height: height, font: font)
+                    x += ink.width + innerGap
                 }
                 x += groupGap - innerGap
             }
