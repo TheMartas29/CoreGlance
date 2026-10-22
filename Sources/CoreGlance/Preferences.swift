@@ -65,13 +65,13 @@ enum Metric: String, CaseIterable, Identifiable {
         case .memory: return "memorychip"
         case .memoryPressure: return "gauge.with.dots.needle.50percent"
         case .compressed: return "rectangle.compress.vertical"
-        case .swap: return "arrow.left.arrow.right"
+        case .swap: return "arrow.up.arrow.down"
         case .disk, .ssdTemperature: return "internaldrive"
         case .batteryTemperature: return "minus.plus.batteryblock"
         case .battery: return "battery.75percent"
         case .power: return "bolt"
         case .fan: return "fan"
-        case .network: return "arrow.up.arrow.down"
+        case .network: return "network"
         }
     }
 
@@ -104,7 +104,7 @@ enum Metric: String, CaseIterable, Identifiable {
     /// Whether the caption is drawn even when glyphs are on (the glyph is shared or unclear).
     var needsCaption: Bool {
         // Temperatures share the glyph of their component; the "°" tells them apart.
-        [.eFrequency, .swap, .compressed].contains(self)
+        self == .eFrequency
     }
 }
 
