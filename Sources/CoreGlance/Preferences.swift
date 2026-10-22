@@ -108,6 +108,55 @@ enum Metric: String, CaseIterable, Identifiable {
     }
 }
 
+enum Severity { case normal, warning, critical }
+
+/// Level at which a value turns orange (warning) and red (critical).
+/// For `lowerIsWorse` metrics (free disk, battery charge) the value is bad *below* the level.
+struct Threshold: Equatable {
+    var warning: Double
+    var critical: Double
+}
+
+extension Metric {
+    /// Defaults from vendor documentation and field reports; see RESEARCH.md ("Alert thresholds").
+    /// Memory metrics use macOS's own memory pressure instead and are not listed here.
+    var defaultThreshold: Threshold? {
+        switch self {
+        case .cpu, .gpu: return Threshold(warning: 80, critical: 95)                // % busy
+        case .cpuTemperature: return Threshold(warning: 90, critical: 100)          // °C, M-series TjMax ≈ 100
+        case .gpuTemperature: return Threshold(warning: 85, critical: 100)
+        case .batteryTemperature: return Threshold(warning: 40, critical: 44)       // charging pauses ≈ 44 °C
+        case .ssdTemperature: return Threshold(warning: 70, critical: 80)           // typical NVMe WCTEMP/CCTEMP
+        case .swap: return Threshold(warning: 4, critical: 10)                      // GB
+        case .disk: return Threshold(warning: 50, critical: 20)                     // GB free
+        case .battery: return Threshold(warning: 20, critical: 10)                  // % charge
+        default: return nil
+        }
+    }
+
+    var lowerIsWorse: Bool { self == .disk || self == .battery }
+
+    var isTemperature: Bool { [.cpuTemperature, .gpuTemperature, .batteryTemperature, .ssdTemperature].contains(self) }
+
+    /// Unit of the threshold values (temperatures are stored in °C).
+    var thresholdUnit: String {
+        switch self {
+        case .swap, .disk: return "GB"
+        case .cpuTemperature, .gpuTemperature, .batteryTemperature, .ssdTemperature: return "°C"
+        default: return "%"
+        }
+    }
+
+    var thresholdRange: ClosedRange<Double> {
+        switch self {
+        case .disk: return 0...1000
+        case .swap: return 0...128
+        case .cpuTemperature, .gpuTemperature, .batteryTemperature, .ssdTemperature: return 20...130
+        default: return 0...100
+        }
+    }
+}
+
 enum TemperatureUnit: String, CaseIterable { case celsius, fahrenheit }
 enum TemperatureMode: String, CaseIterable { case average, hottest }
 enum BarFont: String, CaseIterable { case system, monospaced }
@@ -125,6 +174,14 @@ final class Preferences: ObservableObject {
     @Published var unit: TemperatureUnit { didSet { defaults.set(unit.rawValue, forKey: "unit") } }
     @Published var temperatureMode: TemperatureMode { didSet { defaults.set(temperatureMode.rawValue, forKey: "temperatureMode") } }
     @Published var font: BarFont { didSet { defaults.set(font.rawValue, forKey: "font") } }
+    @Published var colorize: Bool { didSet { defaults.set(colorize, forKey: "colorize") } }
+    /// User overrides of the default thresholds.
+    @Published var customThresholds: [Metric: Threshold] {
+        didSet {
+            let plain = Dictionary(uniqueKeysWithValues: customThresholds.map { ($0.key.rawValue, [$0.value.warning, $0.value.critical]) })
+            defaults.set(plain, forKey: "thresholds")
+        }
+    }
 
     private init() {
         let stored = defaults.stringArray(forKey: "metrics")?.compactMap(Metric.init(rawValue:))
@@ -138,9 +195,29 @@ final class Preferences: ObservableObject {
         unit = TemperatureUnit(rawValue: defaults.string(forKey: "unit") ?? "") ?? .celsius
         temperatureMode = TemperatureMode(rawValue: defaults.string(forKey: "temperatureMode") ?? "") ?? .average
         font = BarFont(rawValue: defaults.string(forKey: "font") ?? "") ?? .system
+        colorize = defaults.object(forKey: "colorize") as? Bool ?? true
+        let plain = defaults.dictionary(forKey: "thresholds") as? [String: [Double]] ?? [:]
+        customThresholds = plain.reduce(into: [:]) { result, item in
+            if let m = Metric(rawValue: item.key), item.value.count == 2 { result[m] = Threshold(warning: item.value[0], critical: item.value[1]) }
+        }
     }
 
     func isEnabled(_ m: Metric) -> Bool { enabled.contains(m) }
+
+    func threshold(_ m: Metric) -> Threshold? { customThresholds[m] ?? m.defaultThreshold }
+
+    func setThreshold(_ m: Metric, _ t: Threshold) { customThresholds[m] = t == m.defaultThreshold ? nil : t }
+
+    func resetThresholds() { customThresholds = [:] }
+
+    /// Classifies a value (in the threshold's unit) against the user's or default levels.
+    func severity(_ m: Metric, value: Double?) -> Severity {
+        guard let value, let t = threshold(m) else { return .normal }
+        if m.lowerIsWorse {
+            return value <= t.critical ? .critical : value <= t.warning ? .warning : .normal
+        }
+        return value >= t.critical ? .critical : value >= t.warning ? .warning : .normal
+    }
 
     func set(_ m: Metric, _ on: Bool) {
         if on, !enabled.contains(m) {
