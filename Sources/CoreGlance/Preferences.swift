@@ -114,6 +114,10 @@ enum Severity { case normal, warning, critical }
 struct Threshold: Equatable {
     var warning: Double
     var critical: Double
+
+    func severity(of value: Double) -> Severity {
+        value >= critical ? .critical : value >= warning ? .warning : .normal
+    }
 }
 
 extension Metric {
@@ -188,7 +192,7 @@ final class Preferences: ObservableObject {
     /// Classifies a temperature (°C) against the user's or default levels.
     func severity(_ m: Metric, value: Double?) -> Severity {
         guard let value, let t = threshold(m) else { return .normal }
-        return value >= t.critical ? .critical : value >= t.warning ? .warning : .normal
+        return t.severity(of: value)
     }
 
     func set(_ m: Metric, _ on: Bool) {

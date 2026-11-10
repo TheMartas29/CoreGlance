@@ -39,6 +39,11 @@ final class SoCMetrics {
 
     /// The `pmgr` node stores (frequency, voltage) UInt32 pairs. M1–M3 store CPU frequency
     /// in Hz; M4 stores CPU frequency in kHz (Hz no longer fits 32 bits) — detected by magnitude.
+    /// Raw DVFS value -> MHz. Values >= 100 000 000 are Hz, smaller ones kHz.
+    static func megahertz(_ raw: UInt32) -> Double {
+        Double(raw) >= 100_000_000 ? Double(raw) / 1_000_000 : Double(raw) / 1_000
+    }
+
     private static func readDVFSTables() -> [String: [Double]] {
         var result: [String: [Double]] = [:]
         IORegistry.forEach(class: "AppleARMIODevice") { entry in
@@ -50,7 +55,7 @@ final class SoCMetrics {
                 let raw: [UInt32] = data.withUnsafeBytes { buf in
                     stride(from: 0, to: buf.count - 7, by: 8).map { buf.loadUnaligned(fromByteOffset: $0, as: UInt32.self) }
                 }
-                result[key] = raw.map { Double($0) >= 100_000_000 ? Double($0) / 1_000_000 : Double($0) / 1_000 }
+                result[key] = raw.map(Self.megahertz)
             }
         }
         return result

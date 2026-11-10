@@ -78,7 +78,11 @@ final class SMC {
     /// Decodes the common numeric SMC data types into a Double.
     func value(_ key: String) -> Double? {
         guard let (info, b) = bytes(key) else { return nil }
-        switch info.type {
+        return Self.decode(type: info.type, bytes: b)
+    }
+
+    static func decode(type: String, bytes b: [UInt8]) -> Double? {
+        switch type {
         case "flt " where b.count >= 4:
             return Double(b.withUnsafeBytes { $0.loadUnaligned(as: Float32.self) })
         case "sp78" where b.count >= 2:
