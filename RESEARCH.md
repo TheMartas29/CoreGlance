@@ -71,3 +71,59 @@ When **Color temperatures at warning / critical levels** is on, a temperature in
 - **40 °C and above: critical.** This is close to the end of the safe Li-ion charging window, which is 0–45 °C ([CMB spec](https://cmbatteries.com/cmb-lithium-battery-safety-precautions), [Elfa / BU-410](https://www.elfa.nl/wp-content/uploads/2023/08/Charging-at-high-and-low-temperatures.pdf)). A MacBook battery controller was observed stopping charging at **44 °C** ([Eclectic Light](https://eclecticlight.co/2021/01/30/why-your-laptop-mac-may-not-be-recharging/)).
 
 Temperature levels are stored in °C and shown in °F when that unit is selected.
+
+## Apple M6 / macOS 27.2: why `--dump` shows GHz 0, no CPU watts and four untyped cores (coreglance#2)
+
+`--dump` on an Apple M6 / macOS 27.2 shows `cores: EEEEEEPP????`, `eCluster/pCluster mhz 0.0`, `gpuMHz nil` and `cpuWatts nil`, while `gpuWatts`, the SMC temperatures and `systemWatts` work. Evidence below was collected on the M6 with `ioreg` (output trimmed, no serial numbers or UUIDs).
+
+| Symptom | Cause | Status |
+|---|---|---|
+| GHz 0.0 (E and P) and `gpuMHz` nil | **Different structure.** The `pmgr` node no longer holds the DVFS tables; they moved to a sibling node `pmgr-child@700000`. `readDVFSTables` only reads the node named exactly `pmgr`, so all three tables are empty. | Confirmed |
+| 4 cores without type | **Different value.** Cores 8–11 have `cluster-type` `"M"` (and the P cores 6–7 `"P"`). `detectKinds` only knows `"P"` and `"E"`. | Confirmed |
+| `cpuWatts` nil | **Not an entitlement problem**, and not visible in the registry. No `CPU Energy` channel is registered in any `Energy Model` legend (only `GPU Energy`, PCIe ports, `apciec*`), so the CPU channel(s) are published some other way or under another name. | Cause not determined, needs live IOReport |
+
+### Evidence
+
+**1. DVFS tables are in `pmgr-child@700000`, not in `pmgr`.**
+
+`ioreg -l -w0 -r -n pmgr` lists the whole `pmgr` node. Its own properties are only `pmp`, `compatible = "pmgr2,arch"`, `AAPL,phandle`, `pmc-ltr-ka`, `clpc`, `pmgr-ver`, `chiplet-count`, `pmc`, `device_type`, `name`, `pmc-pmgr`. There is no `voltage-states*` property. Children: `ApplePMGRv2` → `clpc@C840000`, `pmgrtools`, `ppm`.
+
+`ioreg -l -w0 -r -n pmgr-child@700000` (class `AppleARMIODevice`, `compatible = "pmgr2,t8152"`) has the tables, with the same key names CoreGlance already looks for:
+
+```
+"voltage-states1-sram" = <e0d40e00 ee020000 00941100 ee020000 802b1800 f8020000 60361e00 02030000 ...>
+"voltage-states5-sram" = <00f91500 ee020000 005e1a00 f8020000 c0201f00 0c030000 a0b42300 39030000 ...>
+"voltage-states9"      = <00000000 7d000000 80e9eb1d a8020000 4021e027 c6020000 80d4b531 d5020000 ...>
+"voltage-states9-sram", "voltage-states0/1/2/5/8/11/29" are present too.
+```
+
+Decoded with the unit rule from "CPU and GPU frequency": `voltage-states1-sram` starts at 0x000ED4E0 = 972 000 kHz (972 MHz, E cluster), `voltage-states5-sram` at 0x0015F900 = 1 440 000 kHz (1440 MHz, P cluster), `voltage-states9` has the 0 Hz "off" entry first, then 0x1DEBE980 = 502 000 000 Hz (502 MHz, GPU). Layout and units are the same as on M4, so only the node lookup is wrong.
+
+`ioreg -l -w0 | grep -oE '"voltage-states[0-9a-z-]*"'` finds these keys only in `pmgr-child@700000`; no other node carries them. On the M4 the same keys were on `pmgr` itself (see "CPU and GPU frequency").
+
+**2. `cluster-type` is `"M"` for the third tier, and P and M share one DVFS cluster.**
+
+`ioreg -p IODeviceTree -n cpu6 -r -l -w0` → `"cluster-type" = <"P">`, `"logical-cpu-id" = 6`, `"logical-cluster-id" = 1`, `compatible = "apple,everest"`.
+`ioreg -p IODeviceTree -n cpu8 -r -l -w0` → `"cluster-type" = <"M">`, `"logical-cpu-id" = 8`, `"logical-cluster-id" = 1`, `compatible = "apple,sawtooth"`.
+
+Because `cluster-type` is read for every core, `found` is true and the `hw.perflevel` fallback never runs, so cores 8–11 stay `.unknown`. The CLPC node confirms only two DVFS clusters: `#cpu-num-clusters = 2`, `#cpu-core-mask-cluster-0 = 63` (cores 0–5) and `#cpu-core-mask-cluster-1 = 4032` (cores 6–11, so P and M cores). That is why there is one P table (`voltage-states5-sram`) and none for M. I did not read cores 0–5 and 7, 9–11 individually; their `cluster-type` follows from `--dump` (`EEEEEEPP????`) and the cluster masks.
+
+**3. IOReport residency channels include an M tier.**
+
+The `CPU Stats` legends in the registry list these channels: `EACC_ECPU0`…`EACC_ECPU5`, `PACC0_PCPU0`, `PACC0_PCPU1`, `PACC0_MCPU2`…`PACC0_MCPU5`. `SoCMetrics.sample()` sums channels whose name starts with `E` or `P`, so `MCPUn` residency would be ignored once the P table is found, and the P-cluster frequency would be computed from the two P cores only. The legend names carry an `ACC` prefix; the exact names in the `CPU Core Performance States` subgroup (`ECPUn`/`PCPUn`/`MCPUn`) could not be read here, see below.
+
+**4. `cpuWatts`.**
+
+`gpuWatts` works, so the `Energy Model` group is readable and an entitlement problem is unlikely (it would block all counters). The `Energy Model` legends in the registry contain only `GPU Energy`, `PCIe Port 0/2 Energy` and `apciec0/1/3 Energy`. No `CPU Energy` (or per-cluster CPU energy) channel is registered there, so the registry does not say what the CPU channel is called on M6, or whether it is exposed at all.
+
+### What could not be determined, and why
+- **The live IOReport channel list** (exact `Energy Model` CPU channel names, and the `CPU Core Performance States` channel names). In the agent sandbox `--dump` prints `ioreport: unavailable` (and `SMC unavailable`), so no channels can be listed there. It needs `CoreGlance` to log `report.sample()` channel group, subgroup, name and unit once on the M6, outside the sandbox.
+- **`hw.perflevel*`.** `sysctl` is refused in the sandbox (`sysctl: sysctl fmt -1 1024 1: Operation not permitted`), so the number of performance levels and their sizes were not read. They are not needed for the fixes below.
+
+### Proposed fixes (small, tested once a test target exists)
+1. `SoCMetrics.readDVFSTables`: read nodes whose name is `pmgr` **or starts with `pmgr-child`**, keeping the first value found per key so the M4 behavior (tables on `pmgr`) does not change.
+2. `CPULoad.detectKinds`: map `"M"` to `.performance` (M cores run on the P-cluster DVFS table, evidence 2).
+3. `SoCMetrics.sample`: also sum `MCPUn` residency into the P cluster.
+4. `cpuWatts`: log the live Energy Model channel list on the M6, then accept the real name (probably a sum of per-cluster channels).
+
+Estimate: about 40–80 changed lines for 1–3, plus tests. Tests need a test target and a way to feed recorded data (`Package.swift` has none, T01, outside this ticket's allowed files), so the fixes are left to follow-up tickets. Fail-soft stays: missing tables keep showing "–".
