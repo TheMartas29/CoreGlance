@@ -90,6 +90,20 @@ No code was changed: mapping `"M"` to a core kind or guessing new table keys wit
 - `sysctl hw.nperflevels hw.perflevel0 hw.perflevel1 hw.perflevel2` shows how many core tiers there are and their sizes.
 - The list of `Energy Model` channel names (log the channels from `report.sample()` once) shows what replaced `CPU Energy`.
 
+### Which cause is it? Answer to "missing keys / channel name / entitlement / structure"
+- **Entitlement:** unlikely, from the code (GPU energy is read, so the Energy Model counters are not blocked).
+- **Missing `pmgr` keys or different structure (GHz, GPU MHz):** most likely, but **cannot be determined without** the `ioreg -r -n pmgr` listing from the M6.
+- **Different IOReport channel name (CPU watts):** most likely, but **cannot be determined without** the Energy Model channel names from the M6.
+- **Unknown `cluster-type` (cores):** most likely `"M"`, but **cannot be determined without** the `cluster-type` of `cpu0`…`cpu11`.
+
+The agent run that produced this note was denied `ioreg`, `sysctl` and running `CoreGlance --dump` (each returned "requires approval"; `swift build --disable-sandbox` works). A dispatcher config change is needed: allow these read-only commands as standalone calls (no pipes), or have the owner paste the four outputs into the ticket.
+
+### Estimate and split (for the PM)
+The fix is small only if the registry shows a plain rename or an `"M"` tier. Estimate: about 60–120 changed lines, three independent slices, each its own ticket:
+1. Collect the four outputs on the M6 (no code, 10 minutes).
+2. `CPULoad` `"M"` mapping plus a test target with recorded-data fixtures (needs `Package.swift`, which is outside this ticket's allowed files; this is T01).
+3. `SoCMetrics` DVFS keys and CPU energy channel names, tested against the recorded fixtures.
+
 ### Proposed fix once the evidence is in (small, one PR)
 1. `CPULoad.detectKinds`: map `"M"` to `.performance` (or a new kind if the UI should distinguish it).
 2. `SoCMetrics.readDVFSTables`: add the table keys for the new clusters and combine the P-tier clusters.
