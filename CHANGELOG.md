@@ -1,5 +1,11 @@
 # Changelog
 
+## [Nevydáno]
+
+### Změněno
+
+- Přibyla automatická sada testů (`swift test`) pro formátování hodnot, prahy upozornění a čtení senzorů; chování aplikace se nemění (#1).
+
 ## 0.2.2 — 2026-10-22
 
 - Swap and compressed memory show only their glyph (no "SWAP"/"ZIP" label). Swap uses up/down arrows, and network uses the globe glyph.

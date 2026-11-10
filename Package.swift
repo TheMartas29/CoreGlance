@@ -9,6 +9,11 @@ let package = Package(
             name: "CoreGlance",
             path: "Sources/CoreGlance",
             linkerSettings: [.linkedFramework("IOKit"), .linkedFramework("AppKit"), .linkedFramework("ServiceManagement")]
+        ),
+        .testTarget(
+            name: "CoreGlanceTests",
+            dependencies: ["CoreGlance"],
+            path: "Tests/CoreGlanceTests"
         )
     ]
 )

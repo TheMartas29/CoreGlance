@@ -56,11 +56,16 @@ final class CPULoad {
         guard previous.count == current.count else { return Array(repeating: 0, count: current.count) }
 
         return zip(current, previous).map { now, old in
-            // Tick counters are 32-bit and wrap; &- keeps the delta correct.
-            let d = (0..<stride).map { Double(now[$0] &- old[$0]) }
-            let busy = d[Int(CPU_STATE_USER)] + d[Int(CPU_STATE_SYSTEM)] + d[Int(CPU_STATE_NICE)]
-            let total = busy + d[Int(CPU_STATE_IDLE)]
-            return total > 0 ? busy / total : 0
+            Self.busyFraction(now: now, old: old)
         }
+    }
+
+    /// Busy fraction from two tick snapshots indexed by CPU_STATE_*.
+    /// Tick counters are 32-bit and wrap; &- keeps the delta correct.
+    static func busyFraction(now: [UInt32], old: [UInt32]) -> Double {
+        let d = (0..<now.count).map { Double(now[$0] &- old[$0]) }
+        let busy = d[Int(CPU_STATE_USER)] + d[Int(CPU_STATE_SYSTEM)] + d[Int(CPU_STATE_NICE)]
+        let total = busy + d[Int(CPU_STATE_IDLE)]
+        return total > 0 ? busy / total : 0
     }
 }
