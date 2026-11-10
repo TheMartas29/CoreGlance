@@ -14,6 +14,7 @@ struct Snapshot {
     var battery = BatteryStats()
     var network = NetworkStats()
     var disk = DiskStats()
+    var thermalState: ThermalLevel = .unknown
     /// False until the first real reading; until then every metric counts as available.
     var sampled = false
 
@@ -41,6 +42,7 @@ extension Metric {
         case .battery: return s.battery.present
         case .power: return s.thermals.systemWatts != nil || s.battery.systemPowerIn != nil
         case .fan: return !s.thermals.fans.isEmpty
+        case .thermalState: return true
         }
     }
 }
@@ -51,6 +53,7 @@ final class Monitor: ObservableObject {
 
     private let queue = DispatchQueue(label: "CoreGlance.monitor", qos: .utility)
     private var timer: DispatchSourceTimer?
+    private let thermalSource: () -> ProcessInfo.ThermalState
 
     // Sensors are created lazily on the monitor queue; any of them may be unavailable.
     private var cpuLoad: CPULoad!
@@ -61,7 +64,9 @@ final class Monitor: ObservableObject {
 
     var chip: String { chipName }
 
-    init() {
+    /// `thermalSource` is injectable so tests can feed every thermal state without heating the Mac.
+    init(thermalSource: @escaping () -> ProcessInfo.ThermalState = { ProcessInfo.processInfo.thermalState }) {
+        self.thermalSource = thermalSource
         queue.async { [self] in
             cpuLoad = CPULoad()
             soc = SoCMetrics()
@@ -84,6 +89,9 @@ final class Monitor: ObservableObject {
         timer = t
     }
 
+    /// One reading on the monitor queue (used by tests).
+    func readNow() -> Snapshot { queue.sync { read() } }
+
     private func read() -> Snapshot {
         var s = Snapshot()
         s.sampled = true
@@ -104,6 +112,7 @@ final class Monitor: ObservableObject {
         s.battery = BatteryReader.read()
         s.network = network.sample()
         s.disk = DiskReader.read()
+        s.thermalState = ThermalLevel(thermalSource())
         return s
     }
 
@@ -123,6 +132,7 @@ final class Monitor: ObservableObject {
             lines.append(String(describing: s.thermals))
             lines.append(String(describing: s.battery))
             lines.append(String(describing: s.network))
+            lines.append("thermal state: \(s.thermalState.fullName)")
             return lines.joined(separator: "\n")
         }
     }
