@@ -33,6 +33,7 @@ enum StatusBarRenderer {
         case .gpuTemperature: return prefs.severity(metric, value: temperature(s.thermals.gpu, prefs))
         case .batteryTemperature: return prefs.severity(metric, value: s.batteryTemperature)
         case .ssdTemperature: return prefs.severity(metric, value: s.thermals.ssd)
+        case .thermalState: return s.thermalState.severity  // discrete state: fixed levels, no thresholds
         default: return .normal
         }
     }
@@ -66,6 +67,7 @@ enum StatusBarRenderer {
         case .fan:
             let rpm = s.thermals.fans.map(\.rpm).max()
             return rpm.map { "\(Int($0))" } ?? "–"
+        case .thermalState: return s.thermalState.shortText
         case .network: return ""
         }
     }

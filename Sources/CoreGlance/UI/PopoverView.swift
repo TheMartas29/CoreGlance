@@ -124,6 +124,7 @@ private struct StatsView: View {
                 ForEach(Array(s.thermals.fans.enumerated()), id: \.offset) { i, fan in
                     Row("Fan \(i + 1)", "\(Int(fan.rpm)) rpm")
                 }
+                Row("Thermal state", s.thermalState.fullName).emphasized(severity: s.thermalState.severity)
                 Row("Network", "↓ \(Format.rate(s.network.down))/s  ↑ \(Format.rate(s.network.up))/s")
             }
         }
@@ -169,6 +170,7 @@ private struct Row: View {
     let label: String
     let value: String
     var hot = false
+    var critical = false
 
     init(_ label: String, _ value: String) {
         self.label = label
@@ -181,11 +183,18 @@ private struct Row: View {
         return r
     }
 
+    func emphasized(severity: Severity) -> Row {
+        var r = self
+        r.hot = severity == .warning
+        r.critical = severity == .critical
+        return r
+    }
+
     var body: some View {
         HStack {
             Text(label).foregroundStyle(.secondary)
             Spacer()
-            Text(value).monospacedDigit().foregroundStyle(hot ? .orange : .primary)
+            Text(value).monospacedDigit().foregroundStyle(critical ? .red : hot ? .orange : .primary)
         }
         .font(.callout)
     }

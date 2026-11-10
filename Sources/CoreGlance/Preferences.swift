@@ -13,7 +13,7 @@ enum Metric: String, CaseIterable, Identifiable {
     case memory, memoryPressure, compressed, swap
     case disk, ssdTemperature
     case battery, batteryTemperature
-    case power, fan
+    case power, fan, thermalState
     case network
 
     var id: String { rawValue }
@@ -25,7 +25,7 @@ enum Metric: String, CaseIterable, Identifiable {
         case .memory, .memoryPressure, .compressed, .swap: return .memory
         case .disk, .ssdTemperature: return .disk
         case .battery, .batteryTemperature: return .battery
-        case .power, .fan: return .system
+        case .power, .fan, .thermalState: return .system
         case .network: return .network
         }
     }
@@ -50,6 +50,7 @@ enum Metric: String, CaseIterable, Identifiable {
         case .battery: return "Battery charge"
         case .power: return "System power"
         case .fan: return "Fan speed"
+        case .thermalState: return "Thermal state"
         case .network: return "Network speed"
         }
     }
@@ -71,6 +72,7 @@ enum Metric: String, CaseIterable, Identifiable {
         case .battery: return "battery.75percent"
         case .power: return "bolt"
         case .fan: return "fan"
+        case .thermalState: return "thermometer.medium"
         case .network: return "network"
         }
     }
@@ -97,6 +99,7 @@ enum Metric: String, CaseIterable, Identifiable {
         case .battery: return "BAT"
         case .power: return "PWR"
         case .fan: return "FAN"
+        case .thermalState: return "THERM"
         case .network: return "NET"
         }
     }
@@ -163,10 +166,7 @@ final class Preferences: ObservableObject {
     }
 
     private init() {
-        let stored = defaults.stringArray(forKey: "metrics")?.compactMap(Metric.init(rawValue:))
-        let initial = stored ?? [.cpu, .cpuTemperature, .gpu, .memory, .batteryTemperature]
-        // Saved lists from older versions may be in a different order; always use the catalogue order.
-        enabled = Metric.allCases.filter(initial.contains)
+        enabled = Preferences.initialMetrics(stored: defaults.stringArray(forKey: "metrics"))
         interval = defaults.object(forKey: "interval") as? Double ?? 2
         showGlyphs = defaults.object(forKey: "showGlyphs") as? Bool ?? true
         showCaptions = defaults.object(forKey: "captionTemperatures") as? Bool ?? true
@@ -179,6 +179,13 @@ final class Preferences: ObservableObject {
         customThresholds = plain.reduce(into: [:]) { result, item in
             if let m = Metric(rawValue: item.key), item.value.count == 2 { result[m] = Threshold(warning: item.value[0], critical: item.value[1]) }
         }
+    }
+
+    /// Saved lists from older versions may be in a different order or hold unknown names; the
+    /// result always follows the catalogue order. New metrics (e.g. thermal state) stay off unless saved.
+    static func initialMetrics(stored: [String]?) -> [Metric] {
+        let list = stored?.compactMap(Metric.init(rawValue:)) ?? [.cpu, .cpuTemperature, .gpu, .memory, .batteryTemperature]
+        return Metric.allCases.filter(list.contains)
     }
 
     func isEnabled(_ m: Metric) -> Bool { enabled.contains(m) }
