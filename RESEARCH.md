@@ -71,3 +71,27 @@ When **Color temperatures at warning / critical levels** is on, a temperature in
 - **40 °C and above: critical.** This is close to the end of the safe Li-ion charging window, which is 0–45 °C ([CMB spec](https://cmbatteries.com/cmb-lithium-battery-safety-precautions), [Elfa / BU-410](https://www.elfa.nl/wp-content/uploads/2023/08/Charging-at-high-and-low-temperatures.pdf)). A MacBook battery controller was observed stopping charging at **44 °C** ([Eclectic Light](https://eclecticlight.co/2021/01/30/why-your-laptop-mac-may-not-be-recharging/)).
 
 Temperature levels are stored in °C and shown in °F when that unit is selected.
+
+## Open issue: Apple M6 / macOS 27.2 (coreglance#2)
+
+`--dump` on an Apple M6 / macOS 27.2 shows `cores: EEEEEEPP????`, `eCluster/pCluster mhz 0.0`, `gpuMHz nil` and `cpuWatts nil`, while `gpuWatts`, the SMC temperatures and `systemWatts` work. This section is derived **from the code paths only**. The `ioreg`/`sysctl` evidence has not been collected yet (see "Evidence needed").
+
+| Symptom | What the code implies | Status |
+|---|---|---|
+| GHz 0.0 (E and P) and `gpuMHz` nil | `SoCMetrics.sample()` returns `eFreqs.first ?? 0` for an idle cluster. A value of exactly 0 therefore means the E and P tables are **empty**, and `gpuMHz` is nil only when `gpuFreqs` is empty. All three tables are missing at once, so the cause is the `pmgr` lookup or key naming (`voltage-states1-sram`, `5-sram`, `9` absent, a different node/class, or values that are not `Data`), not one cluster's table. It is not IOReport. | Likely, unverified |
+| `cpuWatts` nil | IOReport itself works, because `gpuWatts` is 0.036. An entitlement problem would hit every Energy Model counter, not only the CPU one. `cpuWatts` is nil only when no channel named exactly `CPU Energy` exists in the `Energy Model` group, so the CPU channels most likely have a different name on M6 (per-cluster or per-tier). | Likely, unverified |
+| 4 cores with unknown type | 6×E and 2×P are detected, so `cluster-type` is read correctly. The `found` flag is already true, so the `hw.perflevel` fallback never runs. The remaining four cores have a `cluster-type` that is neither `"P"` nor `"E"`, which matches the `"M"` tier described in "CPU usage and P/E cores" above. | Likely, unverified |
+
+No code was changed: mapping `"M"` to a core kind or guessing new table keys without seeing the registry would be speculation, and the fail-soft behavior (unknown values shown as "–") must stay intact.
+
+### Evidence needed (run on the M6, strip serial numbers/UUIDs)
+- `ioreg -l -w0 -r -n pmgr | grep -oE '"voltage-states[0-9a-z-]*" = <[0-9a-f]{0,48}'` shows which tables exist and their unit (Hz or kHz).
+- `ioreg -p IODeviceTree -n cpu0 -r -l -w0 | grep -E 'cluster-type|logical-cpu-id'`, repeated for `cpu0`…`cpu11`, shows the `cluster-type` of each core.
+- `sysctl hw.nperflevels hw.perflevel0 hw.perflevel1 hw.perflevel2` shows how many core tiers there are and their sizes.
+- The list of `Energy Model` channel names (log the channels from `report.sample()` once) shows what replaced `CPU Energy`.
+
+### Proposed fix once the evidence is in (small, one PR)
+1. `CPULoad.detectKinds`: map `"M"` to `.performance` (or a new kind if the UI should distinguish it).
+2. `SoCMetrics.readDVFSTables`: add the table keys for the new clusters and combine the P-tier clusters.
+3. `SoCMetrics.sample`: accept the new CPU energy channel names (sum of per-cluster channels).
+4. Tests need a test target and a way to feed recorded data. `Package.swift` has no test target (T01), and it is outside this ticket's allowed files.
