@@ -9,6 +9,7 @@
 ### Změněno
 
 - Přibyla automatická sada testů (`swift test`) pro formátování hodnot, prahy upozornění a čtení senzorů; chování aplikace se nemění (#1).
+- Výběr teplotních senzorů a výpočet průměru/maxima teplot je oddělený od hardwaru a pokrytý testy (ARM i Intel, ořez nesmyslných hodnot); chování aplikace se nemění (#14).
 
 ## 0.2.2 — 2026-10-22
 

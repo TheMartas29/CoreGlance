@@ -24,28 +24,56 @@ final class Thermals {
     init?() {
         guard let smc = SMC() else { return nil }
         self.smc = smc
-        let keys = smc.allKeys()
-        // Only keep sensors that currently report a plausible temperature.
-        func sensors(_ match: (String) -> Bool) -> [String] {
-            keys.filter(match).filter { key in smc.value(key).map { $0 > 0 && $0 < 150 } ?? false }
-        }
         #if arch(arm64)
-        cpuKeys = sensors { $0.hasPrefix("Tp") || $0.hasPrefix("Te") }
-        gpuKeys = sensors { $0.hasPrefix("Tg") }
+        let isARM = true
         #else
-        let intelCPU: Set<String> = ["TC0P", "TC0D", "TC0E", "TC0F", "TC0H", "TCXC"]
-        cpuKeys = sensors { intelCPU.contains($0) || ($0.hasPrefix("TC") && $0.hasSuffix("C") && $0.count == 4) }
-        gpuKeys = sensors { ["TG0P", "TG0D", "TG0H", "TGDD"].contains($0) }
+        let isARM = false
         #endif
-        batteryKeys = sensors { $0.count == 4 && $0.hasPrefix("TB") && $0.hasSuffix("T") }
-        ssdKeys = sensors { $0 == "TH0x" || $0 == "TH0a" || $0 == "TH0b" || $0 == "TH0A" }
+        let candidates = Thermals.classify(keys: smc.allKeys(), isARM: isARM)
+        // Only keep sensors that currently report a plausible temperature.
+        func plausible(_ keys: [String]) -> [String] {
+            keys.filter { key in smc.value(key).map { $0 > 0 && $0 < 150 } ?? false }
+        }
+        cpuKeys = plausible(candidates.cpu)
+        gpuKeys = plausible(candidates.gpu)
+        batteryKeys = plausible(candidates.battery)
+        ssdKeys = plausible(candidates.ssd)
         fanCount = Int(smc.value("FNum") ?? 0)
     }
 
+    struct Classification: Equatable {
+        var cpu: [String] = [], gpu: [String] = [], battery: [String] = [], ssd: [String] = []
+    }
+
+    /// Pure prefix classification of SMC keys into candidate sensors (no hardware access).
+    static func classify(keys: [String], isARM: Bool) -> Classification {
+        let intelCPU: Set<String> = ["TC0P", "TC0D", "TC0E", "TC0F", "TC0H", "TCXC"]
+        let intelGPU: Set<String> = ["TG0P", "TG0D", "TG0H", "TGDD"]
+        let ssd: Set<String> = ["TH0x", "TH0a", "TH0b", "TH0A"]
+        var c = Classification()
+        for k in keys {
+            if isARM {
+                if k.hasPrefix("Tp") || k.hasPrefix("Te") { c.cpu.append(k) }
+                else if k.hasPrefix("Tg") { c.gpu.append(k) }
+            } else {
+                if intelCPU.contains(k) || (k.hasPrefix("TC") && k.hasSuffix("C") && k.count == 4) { c.cpu.append(k) }
+                else if intelGPU.contains(k) { c.gpu.append(k) }
+            }
+            if k.count == 4 && k.hasPrefix("TB") && k.hasSuffix("T") { c.battery.append(k) }
+            if ssd.contains(k) { c.ssd.append(k) }
+        }
+        return c
+    }
+
+    /// Mean and max of the values inside `valid`; nil when none qualify.
+    static func aggregate(_ values: [Double], valid: ClosedRange<Double>) -> Reading? {
+        let ok = values.filter { valid.contains($0) }
+        guard let top = ok.max() else { return nil }
+        return Reading(average: ok.reduce(0, +) / Double(ok.count), max: top)
+    }
+
     private func reading(_ keys: [String], valid: ClosedRange<Double> = 1...150) -> Reading? {
-        let values = keys.compactMap { smc.value($0) }.filter { valid.contains($0) }
-        guard !values.isEmpty else { return nil }
-        return Reading(average: values.reduce(0, +) / Double(values.count), max: values.max()!)
+        Thermals.aggregate(keys.compactMap { smc.value($0) }, valid: valid)
     }
 
     func sample() -> ThermalStats {
