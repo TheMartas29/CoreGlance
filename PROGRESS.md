@@ -15,12 +15,6 @@
 - Výsledek: `swift test --disable-sandbox` 20 testů zelených (6 nových; před změnou nekompilovaly – chyběly typy).
 - Nezkoušeno: screenshoty Snapshotter a `--dump` na serveru (`ssh puppet`) – ověří QA.
 
-<<<<<<< HEAD
-## 2026-11-11 — coreglance#14 čistá klasifikace SMC klíčů
-- Co: `Thermals.classify(keys:isARM:)` a `Thermals.aggregate(_:valid:)` jako čisté funkce, `init?()` je používá; 4 nové testy (ThermalsTests).
-- Výsledek: `swift test --disable-sandbox` 24 testů zelených, build bez varování; testy před změnou nekompilovaly.
-- Poznámka: `--dump` v sandboxu vypíše `smc sensors: SMC unavailable`; porovnání před/po na reálném HW ověří QA.
-=======
 ## 2026-11-11 — coreglance#18 automatická aktualizace z GitHub Releases
 - Co: `Update/` (UpdateLogic = semver, parsování `releases/latest`, plán 24 h; UpdateInstaller = ditto → kontrola bundle id + verze → záloha a výměna přejmenováním; Updater = síť přes protokol, fail-soft), `Preferences.autoUpdate` (výchozí zapnuto) + `init(defaults:)`, přepínač a „Update available“ v Nastavení, README, CHANGELOG.
 - Výsledek: `swift test --disable-sandbox` 38 testů zelených (18 nových; před změnou nekompilovaly), `--dump` beze změny, jediný síťový cíl je api.github.com.
@@ -39,4 +33,8 @@
 - Co: nový `scripts/apply-version.sh` (volá ho `build-app.sh` na kopii plistu): `CFBundleShortVersionString` z `$VERSION` → tag na HEAD → hodnota z plistu; `CFBundleVersion` = `GITHUB_RUN_NUMBER` nebo počet commitů, nejméně hodnota z plistu. `Resources/Info.plist` 0.2.3. `build.yml`: `fetch-depth: 0` a na tagu `VERSION=${GITHUB_REF_NAME#v}`.
 - Výsledek: `bash scripts/test-apply-version.sh` 7/7 ok; `swift build --disable-sandbox` bez chyb. Celý `build-app.sh` v sandboxu agenta nejde (SwiftPM manifest sandbox-exec), ověří QA.
 - Další krok: QA; vydání v0.2.4 mimo tiket.
->>>>>>> origin/main
+
+## 2026-11-11 — coreglance#14 čistá klasifikace SMC klíčů
+- Co: `Thermals.classify(keys:isARM:)` a `Thermals.aggregate(_:valid:)` jako čisté funkce, `init?()` je používá; 4 nové testy (ThermalsTests).
+- Výsledek: `swift test --disable-sandbox` zelené, build bez varování; testy před změnou nekompilovaly.
+- Poznámka: `--dump` v sandboxu vypíše `smc sensors: SMC unavailable`; porovnání před/po na reálném HW ověří QA.
