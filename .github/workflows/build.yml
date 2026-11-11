@@ -1,5 +1,7 @@
 name: Build
 
+# Runnery: self-hosted puppet Mac (label puppet-ci, zdarma; fronta max 3 joby / 1 Xcode, viz puppetmaster docs/ci-runner.md).
+# Nouzově GitHub-hosted: proměnné repa CI_RUNNER=ubuntu-latest a CI_RUNNER_XCODE=macos-26 (Settings → Variables).
 on:
   push:
     branches: [main]
@@ -11,7 +13,7 @@ permissions:
 
 jobs:
   build:
-    runs-on: macos-15
+    runs-on: ${{ vars.CI_RUNNER_XCODE || 'puppet-ci' }}
     steps:
       - uses: actions/checkout@v4
       - name: Build universal app
