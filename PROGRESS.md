@@ -6,6 +6,10 @@
 - Poznámka: v sandboxu agenta je nutné `--disable-sandbox` (vnořený sandbox-exec selže).
 - Další krok: CI (T02).
 
+## 2026-11-11 — coreglance#6 follow-up QA k #1
+- Co: komentář vrácen nad `readDVFSTables`; testy `SMC.decode` (ui8/si8/ui32, krátký vstup); `busyFraction` vrací 0 místo pádu při <4 tickách; poznámka o `--disable-sandbox` v CONTRIBUTING.
+- Výsledek: nový test `testBusyFractionIgnoresMalformedSnapshots` před změnou padal (Index out of range), po ní zelený.
+
 ## 2026-11-10 — coreglance#9 metrika tepelného stavu
 - Co: `ThermalLevel` (mapování `ProcessInfo.ThermalState` → text/Severity), `Snapshot.thermalState`, injektovatelný zdroj v `Monitor`, `Metric.thermalState` (System, výchozí vypnuto), menu bar, popover, `--dump`; `Preferences.initialMetrics(stored:)` pro testovatelné načtení.
 - Výsledek: `swift test --disable-sandbox` 20 testů zelených (6 nových; před změnou nekompilovaly – chyběly typy).
