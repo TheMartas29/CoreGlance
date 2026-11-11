@@ -62,7 +62,9 @@ final class CPULoad {
 
     /// Busy fraction from two tick snapshots indexed by CPU_STATE_*.
     /// Tick counters are 32-bit and wrap; &- keeps the delta correct.
+    /// Malformed input (fewer than CPU_STATE_MAX ticks, or differing lengths) yields 0 instead of trapping.
     static func busyFraction(now: [UInt32], old: [UInt32]) -> Double {
+        guard now.count >= Int(CPU_STATE_MAX), now.count == old.count else { return 0 }
         let d = (0..<now.count).map { Double(now[$0] &- old[$0]) }
         let busy = d[Int(CPU_STATE_USER)] + d[Int(CPU_STATE_SYSTEM)] + d[Int(CPU_STATE_NICE)]
         let total = busy + d[Int(CPU_STATE_IDLE)]

@@ -71,6 +71,12 @@ Most menu bar monitors either pull in a pile of frameworks, need a privileged he
      ```
 4. The meters appear in the menu bar. CoreGlance has no Dock icon; click the menu bar item to open it.
 
+### Updates
+
+CoreGlance checks for a new release at start and then at most once every 24 hours. It asks the public GitHub API (`https://api.github.com/repos/TheMartas29/CoreGlance/releases/latest`, no account, nothing about you is sent). When a newer release exists, **Settings** shows "Update available: X.Y.Z" with a link to the release page. (Installing the update by itself is coming in a follow-up; for now download it from the release page.)
+
+To turn it off, clear **Settings → General → Automatically install updates**; then the app makes no network requests at all. Releases are not notarized (see *First launch*).
+
 ### Build from source
 
 You need macOS 13+ and the Xcode Command Line Tools (`xcode-select --install`). Full Xcode is not required.

@@ -4,6 +4,7 @@ struct SettingsView: View {
     @ObservedObject var prefs: Preferences
     /// Latest readings; only metrics this Mac can deliver are offered.
     let snapshot: Snapshot
+    @ObservedObject private var updater = Updater.shared
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -62,6 +63,13 @@ struct SettingsView: View {
                 ForEach([1.0, 2, 3, 5, 10], id: \.self) { Text("\(Int($0)) s").tag($0) }
             }
             Toggle("Launch at login", isOn: Binding(get: { prefs.launchAtLogin }, set: { prefs.launchAtLogin = $0 }))
+            Toggle("Automatically install updates", isOn: $prefs.autoUpdate)
+            if let update = updater.availableUpdate {
+                HStack(spacing: 6) {
+                    Text("Update available: \(update.version)").font(.caption)
+                    Link("Release page", destination: update.pageURL).font(.caption)
+                }
+            }
         }
         .toggleStyle(.checkbox)
         .font(.callout)
