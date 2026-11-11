@@ -146,7 +146,7 @@ enum BarFont: String, CaseIterable { case system, monospaced }
 /// User settings, persisted in UserDefaults.
 final class Preferences: ObservableObject {
     static let shared = Preferences()
-    private let defaults = UserDefaults.standard
+    private let defaults: UserDefaults
 
     @Published var enabled: [Metric] { didSet { defaults.set(enabled.map(\.rawValue), forKey: "metrics") } }
     @Published var interval: Double { didSet { defaults.set(interval, forKey: "interval") } }
@@ -165,7 +165,30 @@ final class Preferences: ObservableObject {
         }
     }
 
-    private init() {
+    /// Install new GitHub releases automatically (default on).
+    @Published var autoUpdate: Bool { didSet { defaults.set(autoUpdate, forKey: "autoUpdate") } }
+    var lastUpdateCheck: Date? {
+        get { defaults.object(forKey: "lastUpdateCheck") as? Date }
+        set { defaults.set(newValue, forKey: "lastUpdateCheck") }
+    }
+    /// Newest release found by the last check, kept so Settings can offer it while auto-install is off.
+    var knownRelease: ReleaseInfo? {
+        get {
+            guard let v = defaults.string(forKey: "knownReleaseVersion"),
+                  let d = defaults.string(forKey: "knownReleaseDownload").flatMap(URL.init(string:)),
+                  let p = defaults.string(forKey: "knownReleasePage").flatMap(URL.init(string:)) else { return nil }
+            return ReleaseInfo(version: v, downloadURL: d, pageURL: p)
+        }
+        set {
+            defaults.set(newValue?.version, forKey: "knownReleaseVersion")
+            defaults.set(newValue?.downloadURL.absoluteString, forKey: "knownReleaseDownload")
+            defaults.set(newValue?.pageURL.absoluteString, forKey: "knownReleasePage")
+        }
+    }
+
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
+        autoUpdate = defaults.object(forKey: "autoUpdate") as? Bool ?? true
         enabled = Preferences.initialMetrics(stored: defaults.stringArray(forKey: "metrics"))
         interval = defaults.object(forKey: "interval") as? Double ?? 2
         showGlyphs = defaults.object(forKey: "showGlyphs") as? Bool ?? true
