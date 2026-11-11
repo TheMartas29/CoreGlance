@@ -31,4 +31,24 @@ final class SensorLogicTests: XCTestCase {
         XCTAssertNil(SMC.decode(type: "flt ", bytes: [0, 0]))   // too short
         XCTAssertNil(SMC.decode(type: "zzzz", bytes: [1, 2, 3, 4]))
     }
+
+    func testSMCDecodesIntegerTypes() {
+        XCTAssertEqual(SMC.decode(type: "ui8 ", bytes: [200]), 200)
+        XCTAssertEqual(SMC.decode(type: "si8 ", bytes: [42]), 42)
+        XCTAssertEqual(SMC.decode(type: "ui32", bytes: [0x00, 0x01, 0x00, 0x02]), 65_538)  // 1<<16 + 2, big-endian
+        XCTAssertEqual(SMC.decode(type: "ui32", bytes: [0xFF, 0xFF, 0xFF, 0xFF]), 4_294_967_295)
+    }
+
+    func testSMCRejectsTooShortInput() {
+        XCTAssertNil(SMC.decode(type: "sp78", bytes: [0x1A]))
+        XCTAssertNil(SMC.decode(type: "ui32", bytes: [1, 2, 3]))
+        XCTAssertNil(SMC.decode(type: "ui8 ", bytes: []))
+    }
+
+    // Short or mismatched snapshots must not trap on CPU_STATE_* indexing.
+    func testBusyFractionIgnoresMalformedSnapshots() {
+        XCTAssertEqual(CPULoad.busyFraction(now: [1, 2, 3], old: [0, 0, 0]), 0)
+        XCTAssertEqual(CPULoad.busyFraction(now: [], old: []), 0)
+        XCTAssertEqual(CPULoad.busyFraction(now: [1, 1, 1, 1], old: [0, 0, 0]), 0)
+    }
 }

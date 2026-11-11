@@ -37,13 +37,13 @@ final class SoCMetrics {
         _ = report.sample()  // prime the delta
     }
 
-    /// The `pmgr` node stores (frequency, voltage) UInt32 pairs. M1–M3 store CPU frequency
-    /// in Hz; M4 stores CPU frequency in kHz (Hz no longer fits 32 bits) — detected by magnitude.
     /// Raw DVFS value -> MHz. Values >= 100 000 000 are Hz, smaller ones kHz.
     static func megahertz(_ raw: UInt32) -> Double {
         Double(raw) >= 100_000_000 ? Double(raw) / 1_000_000 : Double(raw) / 1_000
     }
 
+    /// The `pmgr` node stores (frequency, voltage) UInt32 pairs. M1–M3 store CPU frequency
+    /// in Hz; M4 stores CPU frequency in kHz (Hz no longer fits 32 bits) — detected by magnitude.
     private static func readDVFSTables() -> [String: [Double]] {
         var result: [String: [Double]] = [:]
         IORegistry.forEach(class: "AppleARMIODevice") { entry in

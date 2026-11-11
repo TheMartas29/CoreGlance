@@ -15,7 +15,8 @@ enum ThermalLevel: Equatable {
         }
     }
 
-    /// Short text for the menu bar.
+    /// Short text for the menu bar. The abbreviations are intentional: HOT = Serious, CRIT = Critical
+    /// (the popover shows the full names, see `fullName`).
     var shortText: String {
         switch self {
         case .nominal: return "OK"

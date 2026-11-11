@@ -38,6 +38,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
         render()
+        Updater.shared.start()
     }
 
     private func render() {

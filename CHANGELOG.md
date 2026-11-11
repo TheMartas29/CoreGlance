@@ -2,12 +2,32 @@
 
 ## [Nevydáno]
 
-### Přidáno
-
-- Nová metrika „Tepelný stav“ (Thermal state) v menu baru a v popoveru: ukáže, zda vás macOS kvůli horku zpomaluje (OK / FAIR / HOT / CRIT, v popoveru Nominal / Fair / Serious / Critical). Při Fair se text zbarví oranžově, při Serious a Critical červeně. Ve výchozím nastavení je vypnutá, zapnete ji v Nastavení ve skupině System; stav je i ve výpisu `--dump` (#9).
+## [0.2.5] – 2026-11-11
 
 ### Změněno
 
+- Popisek přepínače barvení v Nastavení zmiňuje i tepelný stav; zvýrazněné hodnoty v popoveru jsou tučnější pro lepší čitelnost; README uvádí správný počet metrik (#11).
+
+## [0.2.4] – 2026-11-11
+
+### Opraveno
+
+- Okno O aplikaci a Nastavení ukazují skutečnou verzi. (#28)
+
+## [0.2.3] – 2026-11-11
+
+### Přidáno
+
+- Kontrola nových verzí: CoreGlance při spuštění a pak nejvýše jednou za 24 hodin zkontroluje nové vydání na GitHubu a v Nastavení ukáže „Update available: X.Y.Z“ s odkazem na vydání. Kontrolu vypnete přepínačem „Automatically install updates“ v Nastavení → General (pak aplikace nedělá žádné síťové dotazy). Samotná automatická instalace přijde v další verzi (#18).
+- Nová metrika „Tepelný stav“ (Thermal state) v menu baru a v popoveru: ukáže, zda vás macOS kvůli horku zpomaluje (OK / FAIR / HOT / CRIT, v popoveru Nominal / Fair / Serious / Critical). Při Fair se text zbarví oranžově, při Serious a Critical červeně. Ve výchozím nastavení je vypnutá, zapnete ji v Nastavení ve skupině System; stav je i ve výpisu `--dump` (#9).
+
+### Opraveno
+
+- Výpočet zátěže CPU už nespadne při neúplných datech z jádra systému; vrátí 0 % (#6).
+
+### Změněno
+
+- Automatické sestavení na GitHubu teď u každého pull requestu spouští `swift build` (selže při jakémkoli varování) a `swift test`; oprávnění k zápisu má jen krok, který vydává release (#12).
 - Přibyla automatická sada testů (`swift test`) pro formátování hodnot, prahy upozornění a čtení senzorů; chování aplikace se nemění (#1).
 - Výběr teplotních senzorů a výpočet průměru/maxima teplot je oddělený od hardwaru a pokrytý testy (ARM i Intel, ořez nesmyslných hodnot); chování aplikace se nemění (#14).
 
