@@ -2,6 +2,10 @@
 
 ## [Nevydáno]
 
+### Opraveno
+
+- Okno O aplikaci a Nastavení ukazují skutečnou verzi. (#28)
+
 ## [0.2.3] – 2026-11-11
 
 ### Přidáno
