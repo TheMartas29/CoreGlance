@@ -19,3 +19,8 @@
 ## 2026-11-11 — coreglance#18 kolo 2: zúžení na první řez
 - QA: PR > 500 řádků. Řez 1 = přepínač, plánování, kontrola GitHub API, „Update available“ v Nastavení. Instalace (UpdateInstaller + restart) odložena do navazujícího tiketu; kód je v commitu bfcd448 (`git show bfcd448:Sources/CoreGlance/Update/UpdateInstaller.swift`).
 - Výsledek: `swift test --disable-sandbox` 35 testů zelených (20 → 35).
+
+## 2026-11-11 — coreglance#12 CI: swift build/test a zúžená oprávnění
+- Co: `build.yml` má `permissions: contents: read`, kroky `swift build` a `swift test` (bash, tee do logu, selže na `warning:`) před `build-app.sh`; samostatný job `release` (needs build, jen tag `v*`, `contents: write`, download-artifact, `GH_REPO`).
+- Výsledek: lokálně `swift build --disable-sandbox` bez varování, `swift test --disable-sandbox` 20 testů zelených. YAML přes ruby v sandboxu agenta nešlo spustit (vyžaduje schválení), ověří QA.
+- Další krok: QA.
