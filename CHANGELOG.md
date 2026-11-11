@@ -8,6 +8,7 @@
 
 ### Změněno
 
+- Automatické sestavení na GitHubu teď u každého pull requestu spouští `swift build` (selže při jakémkoli varování) a `swift test`; oprávnění k zápisu má jen krok, který vydává release (#12).
 - Přibyla automatická sada testů (`swift test`) pro formátování hodnot, prahy upozornění a čtení senzorů; chování aplikace se nemění (#1).
 
 ## 0.2.2 — 2026-10-22
