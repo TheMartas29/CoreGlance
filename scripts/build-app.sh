@@ -12,6 +12,8 @@ rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN" "$APP/Contents/MacOS/CoreGlance"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
+# Version from $VERSION / git tag on HEAD, build number from CI run or commit count (source plist untouched).
+sh scripts/apply-version.sh "$APP/Contents/Info.plist"
 [ -f Resources/AppIcon.icns ] && cp Resources/AppIcon.icns "$APP/Contents/Resources/"
 
 # Ad-hoc signature: enough to run locally and to use "Launch at login".
