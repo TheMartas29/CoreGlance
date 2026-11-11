@@ -73,9 +73,9 @@ Most menu bar monitors either pull in a pile of frameworks, need a privileged he
 
 ### Updates
 
-CoreGlance checks for a new release at start and then at most once every 24 hours. It asks the public GitHub API (`https://api.github.com/repos/TheMartas29/CoreGlance/releases/latest`, no account, nothing about you is sent), downloads `CoreGlance.zip` from the release, replaces itself if its folder is writable (typically /Applications) and restarts. If it can't install, **Settings** shows "Update available" with a link to the release.
+CoreGlance checks for a new release at start and then at most once every 24 hours. It asks the public GitHub API (`https://api.github.com/repos/TheMartas29/CoreGlance/releases/latest`, no account, nothing about you is sent). When a newer release exists, **Settings** shows "Update available: X.Y.Z" with a link to the release page. (Installing the update by itself is coming in a follow-up; for now download it from the release page.)
 
-To turn it off, clear **Settings → General → Automatically install updates**; then the app makes no network requests at all. Updates are not notarized, just like the first download (see *First launch*), and are not signature-verified beyond checking the bundle identifier and version.
+To turn it off, clear **Settings → General → Automatically install updates**; then the app makes no network requests at all. Releases are not notarized (see *First launch*).
 
 ### Build from source
 

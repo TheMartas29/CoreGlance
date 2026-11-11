@@ -1,10 +1,9 @@
-import AppKit
+import Foundation
 import os
 
 /// Network boundary of the updater (replaced by a fake in tests).
 protocol UpdateNetwork {
     func latestReleaseJSON() async throws -> Data
-    func download(_ url: URL, to file: URL) async throws
 }
 
 struct GitHubNetwork: UpdateNetwork {
@@ -18,15 +17,9 @@ struct GitHubNetwork: UpdateNetwork {
         guard (response as? HTTPURLResponse)?.statusCode == 200 else { throw URLError(.badServerResponse) }
         return data
     }
-
-    func download(_ url: URL, to file: URL) async throws {
-        let (temp, response) = try await URLSession.shared.download(from: url)
-        guard (response as? HTTPURLResponse)?.statusCode == 200 else { throw URLError(.badServerResponse) }
-        try FileManager.default.moveItem(at: temp, to: file)
-    }
 }
 
-/// Looks for a newer GitHub release and installs it, if the user allows it. Fail-soft: errors are only logged.
+/// Looks for a newer GitHub release while the user allows it. Fail-soft: errors are only logged.
 @MainActor
 final class Updater: ObservableObject {
     static let shared = Updater()
@@ -35,25 +28,18 @@ final class Updater: ObservableObject {
     private let prefs: Preferences
     private let network: UpdateNetwork
     private let currentVersion: String?
-    private let target: URL
-    private let relaunch: (URL) -> Void
     private var busy = false
     private var timer: Timer?
-    @Published private(set) var installing = false
 
     init(prefs: Preferences = .shared,
          network: UpdateNetwork = GitHubNetwork(),
-         currentVersion: String? = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String,
-         target: URL = Bundle.main.bundleURL,
-         relaunch: @escaping (URL) -> Void = Updater.relaunchApp) {
+         currentVersion: String? = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) {
         self.prefs = prefs
         self.network = network
         self.currentVersion = currentVersion
-        self.target = target
-        self.relaunch = relaunch
     }
 
-    /// A newer release known from an earlier check (also while auto-install is off).
+    /// A newer release known from an earlier check (also while auto-update is off).
     var availableUpdate: ReleaseInfo? {
         guard let currentVersion else { return nil }
         return UpdateLogic.availableUpdate(known: prefs.knownRelease, current: currentVersion)
@@ -81,40 +67,11 @@ final class Updater: ObservableObject {
         }
         objectWillChange.send()
         prefs.lastUpdateCheck = now
-        guard let release, UpdateLogic.isNewer(release.version, than: currentVersion) else {
+        if let release, UpdateLogic.isNewer(release.version, than: currentVersion) {
+            prefs.knownRelease = release
+            Self.log.info("update \(release.version) available")
+        } else {
             prefs.knownRelease = nil
-            return
         }
-        prefs.knownRelease = release
-        guard UpdateInstaller.canInstall(into: target) else {
-            Self.log.info("update \(release.version) available, \(self.target.path) is not writable")
-            return
-        }
-        await install(release, currentVersion: currentVersion)
-    }
-
-    private func install(_ release: ReleaseInfo, currentVersion: String) async {
-        installing = true
-        defer { installing = false }
-        let work = FileManager.default.temporaryDirectory.appendingPathComponent("CoreGlance-update-\(UUID().uuidString)", isDirectory: true)
-        defer { try? FileManager.default.removeItem(at: work) }
-        do {
-            try FileManager.default.createDirectory(at: work, withIntermediateDirectories: true)
-            let zip = work.appendingPathComponent(UpdateLogic.assetName)
-            try await network.download(release.downloadURL, to: zip)
-            try UpdateInstaller.install(zip: zip, into: target, currentVersion: currentVersion, workDir: work)
-            Self.log.info("installed \(release.version), restarting")
-            relaunch(target)
-        } catch {
-            Self.log.error("update install failed: \(String(describing: error))")
-        }
-    }
-
-    nonisolated static func relaunchApp(_ app: URL) {
-        let p = Process()
-        p.executableURL = URL(fileURLWithPath: "/bin/sh")
-        p.arguments = ["-c", "sleep 1; /usr/bin/open \"$0\"", app.path]
-        try? p.run()
-        DispatchQueue.main.async { NSApp.terminate(nil) }
     }
 }

@@ -4,7 +4,7 @@
 
 ### Přidáno
 
-- Automatická aktualizace: CoreGlance při spuštění a pak nejvýše jednou za 24 hodin zkontroluje nové vydání na GitHubu a samo se nainstaluje a restartuje. V Nastavení → General ji vypnete přepínačem „Automatically install updates“ (pak aplikace nedělá žádné síťové dotazy). Pokud se do složky aplikace nedá zapisovat, Nastavení jen ukáže „Update available“ s odkazem na vydání (#18).
+- Kontrola nových verzí: CoreGlance při spuštění a pak nejvýše jednou za 24 hodin zkontroluje nové vydání na GitHubu a v Nastavení ukáže „Update available: X.Y.Z“ s odkazem na vydání. Kontrolu vypnete přepínačem „Automatically install updates“ v Nastavení → General (pak aplikace nedělá žádné síťové dotazy). Samotná automatická instalace přijde v další verzi (#18).
 - Nová metrika „Tepelný stav“ (Thermal state) v menu baru a v popoveru: ukáže, zda vás macOS kvůli horku zpomaluje (OK / FAIR / HOT / CRIT, v popoveru Nominal / Fair / Serious / Critical). Při Fair se text zbarví oranžově, při Serious a Critical červeně. Ve výchozím nastavení je vypnutá, zapnete ji v Nastavení ve skupině System; stav je i ve výpisu `--dump` (#9).
 
 ### Změněno

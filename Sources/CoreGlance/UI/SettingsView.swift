@@ -64,9 +64,7 @@ struct SettingsView: View {
             }
             Toggle("Launch at login", isOn: Binding(get: { prefs.launchAtLogin }, set: { prefs.launchAtLogin = $0 }))
             Toggle("Automatically install updates", isOn: $prefs.autoUpdate)
-            if updater.installing {
-                Text("Installing update…").font(.caption).foregroundStyle(.secondary)
-            } else if let update = updater.availableUpdate {
+            if let update = updater.availableUpdate {
                 HStack(spacing: 6) {
                     Text("Update available: \(update.version)").font(.caption)
                     Link("Release page", destination: update.pageURL).font(.caption)
