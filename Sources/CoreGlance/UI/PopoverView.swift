@@ -195,6 +195,7 @@ private struct Row: View {
             Text(label).foregroundStyle(.secondary)
             Spacer()
             Text(value).monospacedDigit().foregroundStyle(critical ? .red : hot ? .orange : .primary)
+                .fontWeight(critical || hot ? .semibold : .regular)
         }
         .font(.callout)
     }

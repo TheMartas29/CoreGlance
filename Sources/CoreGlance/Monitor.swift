@@ -67,6 +67,7 @@ final class Monitor: ObservableObject {
     /// `thermalSource` is injectable so tests can feed every thermal state without heating the Mac.
     init(thermalSource: @escaping () -> ProcessInfo.ThermalState = { ProcessInfo.processInfo.thermalState }) {
         self.thermalSource = thermalSource
+        queue.setSpecific(key: Monitor.queueKey, value: true)
         queue.async { [self] in
             cpuLoad = CPULoad()
             soc = SoCMetrics()
@@ -89,8 +90,13 @@ final class Monitor: ObservableObject {
         timer = t
     }
 
-    /// One reading on the monitor queue (used by tests).
-    func readNow() -> Snapshot { queue.sync { read() } }
+    private static let queueKey = DispatchSpecificKey<Bool>()
+
+    /// One reading on the monitor queue (used by tests). Safe to call from the queue itself.
+    func readNow() -> Snapshot {
+        if DispatchQueue.getSpecific(key: Monitor.queueKey) == true { return read() }
+        return queue.sync { read() }
+    }
 
     private func read() -> Snapshot {
         var s = Snapshot()

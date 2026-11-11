@@ -186,6 +186,7 @@ final class Preferences: ObservableObject {
         }
     }
 
+    /// `defaults` is injectable so tests do not touch the user's real settings.
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         autoUpdate = defaults.object(forKey: "autoUpdate") as? Bool ?? true
