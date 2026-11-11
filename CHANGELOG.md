@@ -2,6 +2,8 @@
 
 ## [Nevydáno]
 
+## [0.2.5] – 2026-11-11
+
 ### Změněno
 
 - Popisek přepínače barvení v Nastavení zmiňuje i tepelný stav; zvýrazněné hodnoty v popoveru jsou tučnější pro lepší čitelnost; README uvádí správný počet metrik (#11).
