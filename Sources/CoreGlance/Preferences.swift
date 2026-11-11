@@ -146,7 +146,7 @@ enum BarFont: String, CaseIterable { case system, monospaced }
 /// User settings, persisted in UserDefaults.
 final class Preferences: ObservableObject {
     static let shared = Preferences()
-    private let defaults = UserDefaults.standard
+    private let defaults: UserDefaults
 
     @Published var enabled: [Metric] { didSet { defaults.set(enabled.map(\.rawValue), forKey: "metrics") } }
     @Published var interval: Double { didSet { defaults.set(interval, forKey: "interval") } }
@@ -165,7 +165,9 @@ final class Preferences: ObservableObject {
         }
     }
 
-    private init() {
+    /// `defaults` is injectable so tests do not touch the user's real settings.
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
         enabled = Preferences.initialMetrics(stored: defaults.stringArray(forKey: "metrics"))
         interval = defaults.object(forKey: "interval") as? Double ?? 2
         showGlyphs = defaults.object(forKey: "showGlyphs") as? Bool ?? true

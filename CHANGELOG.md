@@ -8,6 +8,7 @@
 
 ### Změněno
 
+- Popisek přepínače barvení v Nastavení zmiňuje i tepelný stav; zvýrazněné hodnoty v popoveru jsou tučnější pro lepší čitelnost; README uvádí správný počet metrik (#11).
 - Přibyla automatická sada testů (`swift test`) pro formátování hodnot, prahy upozornění a čtení senzorů; chování aplikace se nemění (#1).
 
 ## 0.2.2 — 2026-10-22

@@ -65,8 +65,18 @@ final class ThermalStateTests: XCTestCase {
         XCTAssertEqual(Preferences.initialMetrics(stored: ["thermalState", "cpu"]), [.cpu, .thermalState])
     }
 
+    func testReadmeStatesTheRealMetricCount() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        let readme = try String(contentsOf: root.appendingPathComponent("README.md"), encoding: .utf8)
+        XCTAssertEqual(Metric.allCases.count, 20)  // 19 original metrics + thermal state
+        XCTAssertTrue(readme.contains("any combination of 20 metrics"))
+    }
+
     func testBarSeverityAndValueFollowThermalState() {
-        let prefs = Preferences.shared
+        let suite = "CoreGlanceTests.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let prefs = Preferences(defaults: defaults)
         let expected: [(ThermalLevel, String, Severity)] = [
             (.nominal, "OK", .normal), (.fair, "FAIR", .warning), (.serious, "HOT", .critical), (.critical, "CRIT", .critical),
         ]

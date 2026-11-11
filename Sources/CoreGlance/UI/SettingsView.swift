@@ -45,7 +45,7 @@ struct SettingsView: View {
 
             Divider()
             Text("Alerts").font(.subheadline.weight(.semibold))
-            Toggle("Color temperatures at warning / critical levels", isOn: $prefs.colorize)
+            Toggle("Color temperatures and thermal state at warning / critical levels", isOn: $prefs.colorize)
             if prefs.colorize {
                 VStack(alignment: .leading, spacing: 8) {
                     ForEach(Metric.allCases.filter { $0.defaultThreshold != nil && $0.isAvailable(in: snapshot) }) { metric in
