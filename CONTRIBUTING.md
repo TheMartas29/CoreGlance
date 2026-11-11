@@ -42,3 +42,5 @@ These are the most valuable contribution. Open a *Compatibility report* issue wi
 - Make sure `swift build` and `scripts/build-app.sh` succeed with no warnings.
 - CI runs `swift build` (failing on any warning) and `swift test` on every push and PR.
 - Describe which Mac(s) you tested on.
+- Run unit tests with `swift test`. Inside an already sandboxed environment (e.g. an automated agent) use
+  `swift test --disable-sandbox`, because SwiftPM's nested `sandbox-exec` fails there.
