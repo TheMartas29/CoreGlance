@@ -1,8 +1,8 @@
 #!/bin/sh
 # Tests scripts/apply-version.sh in a throwaway git repo. Usage: bash scripts/test-apply-version.sh
 set -eu
-# CI runners export these; the tests below assume a clean environment.
-unset GITHUB_RUN_NUMBER GITHUB_REF_TYPE GITHUB_REF_NAME
+# CI (GitHub Actions) always exports these; the tests below set them explicitly where they matter.
+unset GITHUB_RUN_NUMBER VERSION
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 T="$(mktemp -d "${TMPDIR:-/tmp}/applyver.XXXXXX")"
 trap 'rm -r "$T"' EXIT

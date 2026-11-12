@@ -42,4 +42,5 @@
 ## 2026-11-12 — coreglance#36 kontrola shody verze při releasu
 - Co: `scripts/check-version.sh` (tag × Info.plist × nejvyšší číselná sekce CHANGELOGu), `scripts/release-notes.sh` (tělo sekce), `scripts/test-check-version.sh`; Info.plist 0.2.5; `build.yml`: kontrola na tagu před buildem, testy skriptů, release s `--notes-file`; sekce Releasing v CONTRIBUTING.
 - Výsledek: `sh scripts/test-check-version.sh` samé ok, `sh scripts/check-version.sh 0.2.5` exit 0, `test-apply-version.sh` ok. Na main skripty neexistují, testy tam padají.
-- Další krok: QA.
+- Eskalace (QA kolo 2): puppetd vydává commitem, který mění jen CHANGELOG, Info.plist zaostává → CI na tagu volá `check-version.sh --skip-plist` (tag × CHANGELOG); plist aplikace dostává verzi z tagu přes apply-version.sh. Výchozí režim skriptu zůstal přísný (plist i CHANGELOG). Regresní test „release commit“ padal na předchozí verzi skriptu.
+- Další krok: QA; po merge main přepnout Info.plist na 0.2.7; správce: release krok puppetd by mohl zvedat i Info.plist, pak `--skip-plist` z build.yml odstranit.

@@ -27,9 +27,21 @@ check "plist mismatch message" 1 "$(grep -c 'Info.plist is 1.2.2, tag is 1.2.3' 
 setplist 1.2.3
 run "changelog mismatch" 1 v1.2.4
 check "changelog mismatch message" 1 "$(grep -c 'CHANGELOG section is 1.2.3, tag is 1.2.4' "$T/out")"
+
+# Automated release (puppetd "Release vX.Y.Z" commit) inserts only "## [X.Y.Z] – date" under [Nevydáno];
+# Resources/Info.plist keeps the older version. CI runs with --skip-plist, so such a tag must pass.
+printf '# Changelog\n\n## [Nevydáno]\n\n## [1.2.4] – 2026-02-01\n\n- c\n\n## [1.2.3] – 2026-01-01\n\n- a\n' >"$T/CHANGELOG.md"
+setplist 1.2.3
+run "release commit, strict: plist lags" 1 v1.2.4
+run "release commit, --skip-plist" 0 --skip-plist v1.2.4
+GITHUB_REF_NAME=v1.2.4 run "--skip-plist, tag from GITHUB_REF_NAME" 0 --skip-plist
+run "--skip-plist still checks CHANGELOG" 1 --skip-plist v1.2.5
+check "--skip-plist message" 1 "$(grep -c 'CHANGELOG section is 1.2.4, tag is 1.2.5' "$T/out")"
+
 printf '# Changelog\n\n## [Nevydáno]\n\n- x\n' >"$T/CHANGELOG.md"
 run "no numbered section" 1 v1.2.3
 check "no section message" 1 "$(grep -c 'no numbered section' "$T/out")"
+run "no numbered section, --skip-plist" 1 --skip-plist v1.2.3
 unset GITHUB_REF_NAME
 run "missing tag" 1
 check "missing tag message" 1 "$(grep -c 'missing tag' "$T/out")"

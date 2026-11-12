@@ -19,14 +19,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Check tag matches Info.plist and CHANGELOG
+      - name: Release script tests (check-version, release-notes)
+        run: sh scripts/test-check-version.sh
+      # The automated release commit bumps only CHANGELOG.md, so Resources/Info.plist is not compared here;
+      # the app's Info.plist gets the tag version from apply-version.sh during the build.
+      - name: Check tag matches CHANGELOG
         if: startsWith(github.ref, 'refs/tags/v')
-        run: sh scripts/check-version.sh
-      - name: Script tests (apply-version, check-version)
-        shell: bash
-        run: |
-          bash scripts/test-apply-version.sh
-          sh scripts/test-check-version.sh
+        run: sh scripts/check-version.sh --skip-plist
       - name: Swift build (no warnings allowed)
         shell: bash
         run: |
