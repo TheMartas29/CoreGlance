@@ -38,3 +38,7 @@
 - Co: `Thermals.classify(keys:isARM:)` a `Thermals.aggregate(_:valid:)` jako čisté funkce, `init?()` je používá; 4 nové testy (ThermalsTests).
 - Výsledek: `swift test --disable-sandbox` zelené, build bez varování; testy před změnou nekompilovaly.
 - Poznámka: `--dump` v sandboxu vypíše `smc sensors: SMC unavailable`; porovnání před/po na reálném HW ověří QA.
+
+## 2026-11-12 — coreglance#38 čistý výpočet rychlosti sítě a přepočet paměti
+- Co: `NetworkReader.rate(previous:current:dt:)`, `NetworkReader.isVirtual(_:)`, `MemoryReader.stats(from:pageSize:total:)` jako čisté funkce; `sample()`/`read()` je jen volají. 7 nových testů (NetworkMemoryTests).
+- Výsledek: testy před změnou nekompilovaly (chybí `rate`), po ní `swift test --disable-sandbox` zelené, build bez varování; `--dump` vypisuje řádky MemoryStats/NetworkStats ve stejném formátu.

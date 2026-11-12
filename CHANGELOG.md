@@ -2,6 +2,10 @@
 
 ## [Nevydáno]
 
+### Změněno
+
+- Výpočet rychlosti sítě a využití paměti je oddělený od čtení systému a pokrytý testy; zobrazené hodnoty se nemění. (#38)
+
 ## [0.2.5] – 2026-11-11
 
 ### Změněno
