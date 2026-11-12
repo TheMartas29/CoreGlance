@@ -58,16 +58,22 @@ final class Updater: ObservableObject {
               UpdateLogic.isCheckDue(enabled: prefs.autoUpdate, lastCheck: prefs.lastUpdateCheck, now: now) else { return }
         busy = true
         defer { busy = false }
-        let release: ReleaseInfo?
+        let release: ReleaseInfo
         do {
-            release = UpdateLogic.parseRelease(try await network.latestReleaseJSON())
+            guard let parsed = UpdateLogic.parseRelease(try await network.latestReleaseJSON()) else {
+                // Unreadable answer (no zip asset, rate-limit message, broken JSON): not a completed check;
+                // keep an earlier offer and retry on the next hourly tick.
+                Self.log.error("update check: unreadable release answer")
+                return
+            }
+            release = parsed
         } catch {
             Self.log.error("update check failed: \(error.localizedDescription)")
             return
         }
         objectWillChange.send()
         prefs.lastUpdateCheck = now
-        if let release, UpdateLogic.isNewer(release.version, than: currentVersion) {
+        if UpdateLogic.isNewer(release.version, than: currentVersion) {
             prefs.knownRelease = release
             Self.log.info("update \(release.version) available")
         } else {

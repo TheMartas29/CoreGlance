@@ -44,9 +44,10 @@ enum UpdateLogic {
               let urlText = asset["browser_download_url"] as? String, let download = URL(string: urlText),
               isTrustedHost(download)
         else { return nil }
-        let page = (root["html_url"] as? String).flatMap(URL.init(string:))
+        let page = (root["html_url"] as? String).flatMap(URL.init(string:)).flatMap { isTrustedHost($0) ? $0 : nil }
             ?? URL(string: "https://github.com/TheMartas29/CoreGlance/releases/latest")!
-        return ReleaseInfo(version: tag.hasPrefix("v") ? String(tag.dropFirst()) : tag, downloadURL: download, pageURL: page)
+        let version = tag.hasPrefix("v") || tag.hasPrefix("V") ? String(tag.dropFirst()) : tag
+        return ReleaseInfo(version: version, downloadURL: download, pageURL: page)
     }
 
     private static func isTrustedHost(_ url: URL) -> Bool {
