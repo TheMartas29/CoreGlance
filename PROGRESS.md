@@ -38,3 +38,8 @@
 - Co: `Thermals.classify(keys:isARM:)` a `Thermals.aggregate(_:valid:)` jako čisté funkce, `init?()` je používá; 4 nové testy (ThermalsTests).
 - Výsledek: `swift test --disable-sandbox` zelené, build bez varování; testy před změnou nekompilovaly.
 - Poznámka: `--dump` v sandboxu vypíše `smc sensors: SMC unavailable`; porovnání před/po na reálném HW ověří QA.
+
+## 2026-11-12 — coreglance#37 čisté parsování baterie
+- Co: `BatteryReader.parse(_:)` čistá funkce, `read()` jen volá IORegistry + parse; 11 testů (BatteryParseTests). Prázdný slovník = present false.
+- Výsledek: `swift build` bez varování, `swift test --disable-sandbox` zelené; testy na main nekompilují (chybí `parse`).
+- Další krok: QA.

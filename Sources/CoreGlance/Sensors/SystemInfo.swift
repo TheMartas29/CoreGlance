@@ -126,11 +126,18 @@ struct BatteryStats {
 
 enum BatteryReader {
     static func read() -> BatteryStats {
-        var b = BatteryStats()
         let service = IOServiceGetMatchingService(kIOMainPortDefault, IOServiceMatching("AppleSmartBattery"))
-        guard service != 0 else { return b }
+        guard service != 0 else { return BatteryStats() }
         defer { IOObjectRelease(service) }
-        guard let p = IORegistry.properties(service), (p["BatteryInstalled"] as? Bool) ?? true else { return b }
+        guard let p = IORegistry.properties(service) else { return BatteryStats() }
+        return parse(p)
+    }
+
+    /// Pure conversion of AppleSmartBattery properties to `BatteryStats` (no IOKit, unit-testable).
+    /// An empty dictionary or `BatteryInstalled == false` means no battery; missing keys leave fields nil.
+    static func parse(_ p: [String: Any]) -> BatteryStats {
+        var b = BatteryStats()
+        guard !p.isEmpty, (p["BatteryInstalled"] as? Bool) ?? true else { return b }
 
         func int(_ k: String) -> Int? { (p[k] as? NSNumber).map { Int(truncatingIfNeeded: $0.int64Value) } }
         b.present = true
