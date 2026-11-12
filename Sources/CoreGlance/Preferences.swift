@@ -165,7 +165,7 @@ final class Preferences: ObservableObject {
         }
     }
 
-    /// Install new GitHub releases automatically (default on).
+    /// Look for new GitHub releases automatically (default on). Installing is not implemented yet.
     @Published var autoUpdate: Bool { didSet { defaults.set(autoUpdate, forKey: "autoUpdate") } }
     var lastUpdateCheck: Date? {
         get { defaults.object(forKey: "lastUpdateCheck") as? Date }

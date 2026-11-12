@@ -2,6 +2,10 @@
 
 ## [Nevydáno]
 
+### Změněno
+
+- Přepínač v Nastavení se jmenuje „Check for updates automatically“, protože zatím jen hledá nové verze a neinstaluje je. Dříve nalezená nabídka aktualizace už nezmizí, když GitHub vrátí nečitelnou odpověď; odkaz na vydání se ověřuje jako ostatní odkazy a tag s velkým „V“ se zobrazí bez předpony (#30).
+
 ## [0.2.5] – 2026-11-11
 
 ### Změněno
