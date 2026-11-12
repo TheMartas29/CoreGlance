@@ -65,6 +65,11 @@
 - Výsledek: `swift test --disable-sandbox` 60 testů zelených; 3 nové testy před opravou padaly.
 - Neřešeno: screenshot Nastavení (QA/grafik); instalace a SHA-256 jsou v navazujícím tiketu; hodinové opakování po chybě (krit. 5) ponecháno záměrně.
 
+## 2026-11-12 — coreglance#54 čisté určení typu jader
+- Co: `CPULoad.kinds(entries:count:perflevel:)` čistá funkce („M“ → performance, neznámé → unknown, id mimo rozsah ignorováno, fallback hw.perflevel, Intel unknown); `detectKinds` jen sbírá data; 7 testů (CoreKindsTests). CHANGELOG, poznámka v RESEARCH.md.
+- Výsledek: `swift build` bez varování, `swift test --disable-sandbox` zelené; testy na main nekompilují (chybí `kinds`).
+- Další krok: QA; samostatný CoreKind pro střední tier až po datech z M6.
+
 ## 2026-11-12 — coreglance#51 DVFS tabulky z pmgr-child a MCPUn do P clusteru
 - Co: čisté funkce `SoCMetrics.parseDVFS`, `mergeDVFSTables`, `cluster(forChannel:)`; `readDVFSTables` čte `pmgr` i `pmgr-child*` (pmgr první, takže M1–M4 beze změny); `sample()` počítá E→E, P/M→P. Testy nad bajty zaznamenanými na M6 (`DVFSTests`).
 - Výsledek: `swift test --disable-sandbox` 86 testů zelených, `swift build` bez varování. Nové testy na base nejdou ani přeložit (funkce neexistují).
