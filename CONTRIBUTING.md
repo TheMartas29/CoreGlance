@@ -45,3 +45,11 @@ These are the most valuable contribution. Open a *Compatibility report* issue wi
 - Describe which Mac(s) you tested on.
 - Run unit tests with `swift test`. Inside an already sandboxed environment (e.g. an automated agent) use
   `swift test --disable-sandbox`, because SwiftPM's nested `sandbox-exec` fails there.
+
+## Releasing
+
+1. Set `CFBundleShortVersionString` in `Resources/Info.plist` to the new version `X.Y.Z`.
+2. Rename `## [Nevydáno]` content into a new top section `## [X.Y.Z] – YYYY-MM-DD` in `CHANGELOG.md` (keep an empty `## [Nevydáno]` above it).
+3. Commit, run `sh scripts/check-version.sh X.Y.Z` (tag, Info.plist and CHANGELOG must agree), then tag `vX.Y.Z` and push the tag.
+4. CI fails the tag build if the tag and the top CHANGELOG section differ (`check-version.sh --skip-plist`: automated releases bump only the CHANGELOG; the app's Info.plist gets the tag version at build time).
+5. On success the release job publishes `CoreGlance.zip` with the CHANGELOG section as notes (`scripts/release-notes.sh`).

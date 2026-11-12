@@ -19,6 +19,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Release script tests (check-version, release-notes)
+        run: sh scripts/test-check-version.sh
+      # The automated release commit bumps only CHANGELOG.md, so Resources/Info.plist is not compared here;
+      # the app's Info.plist gets the tag version from apply-version.sh during the build.
+      - name: Check tag matches CHANGELOG
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: sh scripts/check-version.sh --skip-plist
       - name: Swift build (no warnings allowed)
         shell: bash
         run: |
@@ -63,6 +70,7 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           name: CoreGlance
@@ -70,4 +78,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-        run: gh release create "$GITHUB_REF_NAME" CoreGlance.zip --generate-notes
+        run: |
+          sh scripts/release-notes.sh "${GITHUB_REF_NAME#v}" > release-notes.md
+          gh release create "$GITHUB_REF_NAME" CoreGlance.zip --notes-file release-notes.md
