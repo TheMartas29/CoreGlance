@@ -2,6 +2,8 @@
 
 ## [Nevydáno]
 
+## [0.2.7] – 2026-11-12
+
 ### Opraveno
 
 - Číslo verze v aplikaci se bere jen z tagů tvaru `v<číslo>`, úvodní „v“ se ořezává i u ručně zadané verze a nebezpečné hodnoty se odmítnou; skript verze je hlídán testy v CI (#32).
