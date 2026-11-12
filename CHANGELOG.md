@@ -2,6 +2,10 @@
 
 ## [Nevydáno]
 
+### Změněno
+
+- Vydání verze teď automaticky hlídá, že se tag, verze v Info.plist a nejvyšší sekce CHANGELOGu shodují; poznámky k vydání na GitHubu se berou z CHANGELOGu (#36).
+
 ## [0.2.5] – 2026-11-11
 
 ### Změněno

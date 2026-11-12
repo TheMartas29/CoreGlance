@@ -38,3 +38,8 @@
 - Co: `Thermals.classify(keys:isARM:)` a `Thermals.aggregate(_:valid:)` jako čisté funkce, `init?()` je používá; 4 nové testy (ThermalsTests).
 - Výsledek: `swift test --disable-sandbox` zelené, build bez varování; testy před změnou nekompilovaly.
 - Poznámka: `--dump` v sandboxu vypíše `smc sensors: SMC unavailable`; porovnání před/po na reálném HW ověří QA.
+
+## 2026-11-12 — coreglance#36 kontrola shody verze při releasu
+- Co: `scripts/check-version.sh` (tag × Info.plist × nejvyšší číselná sekce CHANGELOGu), `scripts/release-notes.sh` (tělo sekce), `scripts/test-check-version.sh`; Info.plist 0.2.5; `build.yml`: kontrola na tagu před buildem, testy skriptů, release s `--notes-file`; sekce Releasing v CONTRIBUTING.
+- Výsledek: `sh scripts/test-check-version.sh` samé ok, `sh scripts/check-version.sh 0.2.5` exit 0, `test-apply-version.sh` ok. Na main skripty neexistují, testy tam padají.
+- Další krok: QA.
