@@ -39,6 +39,11 @@
 - Výsledek: `swift test --disable-sandbox` zelené, build bez varování; testy před změnou nekompilovaly.
 - Poznámka: `--dump` v sandboxu vypíše `smc sensors: SMC unavailable`; porovnání před/po na reálném HW ověří QA.
 
+## 2026-11-12 — coreglance#32 follow-up QA k verzi v buildu
+- Co: `apply-version.sh` bere jen tagy `v<číslo>`, ořezává „v“ i u `$VERSION`, odmítá znaky mimo `[0-9A-Za-z.+-]`, v mělkém klonu varuje; `build-app.sh` přijímá `SWIFT_BUILD_FLAGS`; `test-apply-version.sh` má 11 nových kontrol včetně běhu `build-app.sh` se stubem swiftu (zachytí smazané volání). CI kroky (test skriptu + kontrola verze v sestavené appce) čekají v `.puppet/github/workflows/build.yml` na zkopírování dispečerem.
+- Výsledek: `bash scripts/test-apply-version.sh` 18/18 ok; proti základu `main` padá 6 nových kontrol.
+- Další krok: QA.
+
 ## 2026-11-12 — coreglance#30 follow-up QA k aktualizacím (#18)
 - Co: přepínač přejmenován na „Check for updates automatically“ (nic neinstaluje); nečitelná odpověď API nemaže `knownRelease` ani neukládá `lastUpdateCheck`; `html_url` se ověřuje jako stažení (jinak odkaz na latest); tag `V0.3.0` → „0.3.0“; CONTRIBUTING zmiňuje Update/.
 - Výsledek: `swift test --disable-sandbox` 60 testů zelených; 3 nové testy před opravou padaly.

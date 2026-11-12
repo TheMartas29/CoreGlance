@@ -4,8 +4,11 @@
 set -eu
 cd "$(dirname "$0")/.."
 
-swift build -c release --arch arm64 --arch x86_64
-BIN="$(swift build -c release --arch arm64 --arch x86_64 --show-bin-path)/CoreGlance"
+# SWIFT_BUILD_FLAGS (e.g. --disable-sandbox in a sandboxed agent) goes to swift build, intentionally word-split.
+# shellcheck disable=SC2086
+swift build -c release --arch arm64 --arch x86_64 ${SWIFT_BUILD_FLAGS:-}
+# shellcheck disable=SC2086
+BIN="$(swift build -c release --arch arm64 --arch x86_64 ${SWIFT_BUILD_FLAGS:-} --show-bin-path)/CoreGlance"
 
 APP=build/CoreGlance.app
 rm -rf "$APP"
