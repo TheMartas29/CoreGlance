@@ -64,3 +64,8 @@
 - Co: přepínač přejmenován na „Check for updates automatically“ (nic neinstaluje); nečitelná odpověď API nemaže `knownRelease` ani neukládá `lastUpdateCheck`; `html_url` se ověřuje jako stažení (jinak odkaz na latest); tag `V0.3.0` → „0.3.0“; CONTRIBUTING zmiňuje Update/.
 - Výsledek: `swift test --disable-sandbox` 60 testů zelených; 3 nové testy před opravou padaly.
 - Neřešeno: screenshot Nastavení (QA/grafik); instalace a SHA-256 jsou v navazujícím tiketu; hodinové opakování po chybě (krit. 5) ponecháno záměrně.
+
+## 2026-11-12 — coreglance#52 SMC.decode: si8 jako znaménkový
+- Co: `si8 ` se dekóduje přes `Int8(bitPattern:)` (0xFF → -1), `ui8 ` beze změny; nový test `testSMCDecodesSignedInt8`.
+- Výsledek: `swift test --disable-sandbox` před opravou 2 selhání (-1, -128), po opravě viz níže.
+- Další krok: QA.

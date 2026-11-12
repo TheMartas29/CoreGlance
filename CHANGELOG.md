@@ -2,6 +2,10 @@
 
 ## [Nevydáno]
 
+### Opraveno
+
+- Záporné hodnoty senzorů typu si8 se čtou správně (např. -1 místo 255). (#52)
+
 ## [0.2.10] – 2026-11-12
 
 ### Změněno

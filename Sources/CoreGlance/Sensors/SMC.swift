@@ -89,8 +89,10 @@ final class SMC {
             return Double(Int16(bitPattern: UInt16(b[0]) << 8 | UInt16(b[1]))) / 256
         case "fpe2" where b.count >= 2:
             return Double(UInt16(b[0]) << 8 | UInt16(b[1])) / 4
-        case "ui8 ", "si8 ":
+        case "ui8 ":
             return b.first.map { Double($0) }
+        case "si8 ":
+            return b.first.map { Double(Int8(bitPattern: $0)) }
         case "ui16" where b.count >= 2:
             return Double(UInt16(b[0]) << 8 | UInt16(b[1]))
         case "ui32" where b.count >= 4:
