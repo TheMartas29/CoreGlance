@@ -158,6 +158,8 @@ Print everything CoreGlance can see. This is the most useful thing to attach to 
 /Applications/CoreGlance.app/Contents/MacOS/CoreGlance --dump
 ```
 
+The output ends with the core type of every CPU (`cpuN cluster-type=… logical-cpu-id=…`) and the list of all IOReport channels (`ioreport channel: group=… subgroup=… name=… unit=…`). Please include it in full in compatibility reports. It stays on your Mac; nothing is sent anywhere.
+
 | Problem | Fix |
 |---|---|
 | "CoreGlance can't be opened" | See *First launch* above. |

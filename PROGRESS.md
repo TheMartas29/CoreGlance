@@ -64,3 +64,8 @@
 - Co: přepínač přejmenován na „Check for updates automatically“ (nic neinstaluje); nečitelná odpověď API nemaže `knownRelease` ani neukládá `lastUpdateCheck`; `html_url` se ověřuje jako stažení (jinak odkaz na latest); tag `V0.3.0` → „0.3.0“; CONTRIBUTING zmiňuje Update/.
 - Výsledek: `swift test --disable-sandbox` 60 testů zelených; 3 nové testy před opravou padaly.
 - Neřešeno: screenshot Nastavení (QA/grafik); instalace a SHA-256 jsou v navazujícím tiketu; hodinové opakování po chybě (krit. 5) ponecháno záměrně.
+
+## 2026-11-13 — coreglance#55 --dump: IOReport kanály a typy jader
+- Co: `--dump` na konci vypíše `cpuN cluster-type=… logical-cpu-id=…` a `ioreport channel: group/subgroup/name/unit` pro všechny kanály (`IOReportCopyAllChannels`, jen čtení metadat, fail-soft). Formátování v čisté `DumpFormat`.
+- Výsledek: `swift test --disable-sandbox` 82 testů zelených; `--dump` na M6 vypíše 12 řádků jader a ~7300 kanálů (většinu tvoří Interrupt Statistics).
+- Další krok: QA; z dat opravit cpuWatts (#17).

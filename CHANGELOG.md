@@ -2,6 +2,10 @@
 
 ## [Nevydáno]
 
+### Přidáno
+
+- `--dump` nově vypíše seznam všech IOReport kanálů (skupina, podskupina, název, jednotka) a typ každého jádra; pomůže opravit údaj o příkonu CPU na nových čipech. Stávající řádky výpisu se nemění. (#55)
+
 ## [0.2.10] – 2026-11-12
 
 ### Změněno
