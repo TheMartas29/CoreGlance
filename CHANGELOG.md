@@ -6,6 +6,12 @@
 
 - Číslo verze v aplikaci se bere jen z tagů tvaru `v<číslo>`, úvodní „v“ se ořezává i u ručně zadané verze a nebezpečné hodnoty se odmítnou; skript verze je hlídán testy v CI (#32).
 
+## [0.2.6] – 2026-11-12
+
+### Změněno
+
+- Přepínač v Nastavení se jmenuje „Check for updates automatically“, protože zatím jen hledá nové verze a neinstaluje je. Dříve nalezená nabídka aktualizace už nezmizí, když GitHub vrátí nečitelnou odpověď; odkaz na vydání se ověřuje jako ostatní odkazy a tag s velkým „V“ se zobrazí bez předpony (#30).
+
 ## [0.2.5] – 2026-11-11
 
 ### Změněno
