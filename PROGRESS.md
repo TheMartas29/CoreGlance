@@ -42,3 +42,25 @@
 ## 2026-11-12 — coreglance#38 čistý výpočet rychlosti sítě a přepočet paměti
 - Co: `NetworkReader.rate(previous:current:dt:)`, `NetworkReader.isVirtual(_:)`, `MemoryReader.stats(from:pageSize:total:)` jako čisté funkce; `sample()`/`read()` je jen volají. 7 nových testů (NetworkMemoryTests).
 - Výsledek: testy před změnou nekompilovaly (chybí `rate`), po ní `swift test --disable-sandbox` zelené, build bez varování; `--dump` vypisuje řádky MemoryStats/NetworkStats ve stejném formátu.
+
+## 2026-11-12 — coreglance#37 čisté parsování baterie
+- Co: `BatteryReader.parse(_:)` čistá funkce, `read()` jen volá IORegistry + parse; 11 testů (BatteryParseTests). Prázdný slovník = present false.
+- Výsledek: `swift build` bez varování, `swift test --disable-sandbox` zelené; testy na main nekompilují (chybí `parse`).
+- Další krok: QA.
+
+## 2026-11-12 — coreglance#36 kontrola shody verze při releasu
+- Co: `scripts/check-version.sh` (tag × Info.plist × nejvyšší číselná sekce CHANGELOGu), `scripts/release-notes.sh` (tělo sekce), `scripts/test-check-version.sh`; Info.plist 0.2.5; `build.yml`: kontrola na tagu před buildem, testy skriptů, release s `--notes-file`; sekce Releasing v CONTRIBUTING.
+- Výsledek: `sh scripts/test-check-version.sh` samé ok, `sh scripts/check-version.sh 0.2.5` exit 0, `test-apply-version.sh` ok. Na main skripty neexistují, testy tam padají.
+- Eskalace (QA kolo 2): puppetd vydává commitem, který mění jen CHANGELOG, Info.plist zaostává → CI na tagu volá `check-version.sh --skip-plist` (tag × CHANGELOG); plist aplikace dostává verzi z tagu přes apply-version.sh. Výchozí režim skriptu zůstal přísný (plist i CHANGELOG). Regresní test „release commit“ padal na předchozí verzi skriptu.
+- Další krok: QA; správce: release krok puppetd by mohl zvedat i Info.plist, pak `--skip-plist` z build.yml odstranit.
+- Merge main: konflikty CHANGELOG/PROGRESS vyřešeny, Info.plist 0.2.7 (= nejvyšší sekce CHANGELOGu), aby `check-version.sh 0.2.7` na mainu prošel.
+
+## 2026-11-12 — coreglance#32 follow-up QA k verzi v buildu
+- Co: `apply-version.sh` bere jen tagy `v<číslo>`, ořezává „v“ i u `$VERSION`, odmítá znaky mimo `[0-9A-Za-z.+-]`, v mělkém klonu varuje; `build-app.sh` přijímá `SWIFT_BUILD_FLAGS`; `test-apply-version.sh` má 11 nových kontrol včetně běhu `build-app.sh` se stubem swiftu (zachytí smazané volání). CI kroky (test skriptu + kontrola verze v sestavené appce) čekají v `.puppet/github/workflows/build.yml` na zkopírování dispečerem.
+- Výsledek: `bash scripts/test-apply-version.sh` 18/18 ok; proti základu `main` padá 6 nových kontrol.
+- Další krok: QA.
+
+## 2026-11-12 — coreglance#30 follow-up QA k aktualizacím (#18)
+- Co: přepínač přejmenován na „Check for updates automatically“ (nic neinstaluje); nečitelná odpověď API nemaže `knownRelease` ani neukládá `lastUpdateCheck`; `html_url` se ověřuje jako stažení (jinak odkaz na latest); tag `V0.3.0` → „0.3.0“; CONTRIBUTING zmiňuje Update/.
+- Výsledek: `swift test --disable-sandbox` 60 testů zelených; 3 nové testy před opravou padaly.
+- Neřešeno: screenshot Nastavení (QA/grafik); instalace a SHA-256 jsou v navazujícím tiketu; hodinové opakování po chybě (krit. 5) ponecháno záměrně.
