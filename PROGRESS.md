@@ -38,3 +38,8 @@
 - Co: `Thermals.classify(keys:isARM:)` a `Thermals.aggregate(_:valid:)` jako čisté funkce, `init?()` je používá; 4 nové testy (ThermalsTests).
 - Výsledek: `swift test --disable-sandbox` zelené, build bez varování; testy před změnou nekompilovaly.
 - Poznámka: `--dump` v sandboxu vypíše `smc sensors: SMC unavailable`; porovnání před/po na reálném HW ověří QA.
+
+## 2026-11-12 — coreglance#32 follow-up QA k verzi v buildu
+- Co: `apply-version.sh` bere jen tagy `v<číslo>`, ořezává „v“ i u `$VERSION`, odmítá znaky mimo `[0-9A-Za-z.+-]`, v mělkém klonu varuje; `build-app.sh` přijímá `SWIFT_BUILD_FLAGS`; `test-apply-version.sh` má 11 nových kontrol včetně běhu `build-app.sh` se stubem swiftu (zachytí smazané volání). CI kroky (test skriptu + kontrola verze v sestavené appce) čekají v `.puppet/github/workflows/build.yml` na zkopírování dispečerem.
+- Výsledek: `bash scripts/test-apply-version.sh` 18/18 ok; proti základu `main` padá 6 nových kontrol.
+- Další krok: QA.
