@@ -71,6 +71,30 @@ final class IOReport {
         simpleValue = simple; stateCount = count; stateName = name; stateResidency = residency
     }
 
+    /// Metadata (group, subgroup, name, unit) of every channel the system offers, for `--dump`.
+    /// Read-only; nil when the library or a symbol is missing.
+    static func allChannelInfo() -> [(group: String, subGroup: String, name: String, unit: String)]? {
+        guard let lib = dlopen("/usr/lib/libIOReport.dylib", RTLD_NOW) else { return nil }
+        func sym<T>(_ name: String, _: T.Type) -> T? {
+            dlsym(lib, name).map { unsafeBitCast($0, to: T.self) }
+        }
+        guard let copyAll = sym("IOReportCopyAllChannels", (@convention(c) (UInt64, UInt64) -> Unmanaged<CFMutableDictionary>?).self),
+              let group = sym("IOReportChannelGetGroup", GetString.self),
+              let subGroup = sym("IOReportChannelGetSubGroup", GetString.self),
+              let channel = sym("IOReportChannelGetChannelName", GetString.self),
+              let unit = sym("IOReportChannelGetUnitLabel", GetString.self),
+              let all = copyAll(0, 0)?.takeRetainedValue(),
+              let items = (all as NSDictionary)["IOReportChannels"] as? [NSDictionary]
+        else { return nil }
+        return items.map { item in
+            let d = item as CFDictionary
+            return (group(d)?.takeUnretainedValue() as String? ?? "",
+                    subGroup(d)?.takeUnretainedValue() as String? ?? "",
+                    channel(d)?.takeUnretainedValue() as String? ?? "",
+                    unit(d)?.takeUnretainedValue() as String? ?? "")
+        }
+    }
+
     /// Returns the channels accumulated since the previous call plus the elapsed time.
     func sample() -> (channels: [Channel], seconds: Double)? {
         guard let current = createSamples(subscription, channels, nil)?.takeRetainedValue() else { return nil }

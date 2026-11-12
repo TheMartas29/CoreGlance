@@ -65,6 +65,11 @@
 - Výsledek: `swift test --disable-sandbox` 60 testů zelených; 3 nové testy před opravou padaly.
 - Neřešeno: screenshot Nastavení (QA/grafik); instalace a SHA-256 jsou v navazujícím tiketu; hodinové opakování po chybě (krit. 5) ponecháno záměrně.
 
+## 2026-11-13 — coreglance#55 --dump: IOReport kanály a typy jader
+- Co: `--dump` na konci vypíše `cpuN cluster-type=… logical-cpu-id=…` a `ioreport channel: group/subgroup/name/unit` pro všechny kanály (`IOReportCopyAllChannels`, jen čtení metadat, fail-soft). Formátování v čisté `DumpFormat`.
+- Výsledek: `swift test --disable-sandbox` 82 testů zelených; `--dump` na M6 vypíše 12 řádků jader a ~7300 kanálů (většinu tvoří Interrupt Statistics).
+- Další krok: QA; z dat opravit cpuWatts (#17).
+
 ## 2026-11-12 — coreglance#54 čisté určení typu jader
 - Co: `CPULoad.kinds(entries:count:perflevel:)` čistá funkce („M“ → performance, neznámé → unknown, id mimo rozsah ignorováno, fallback hw.perflevel, Intel unknown); `detectKinds` jen sbírá data; 7 testů (CoreKindsTests). CHANGELOG, poznámka v RESEARCH.md.
 - Výsledek: `swift build` bez varování, `swift test --disable-sandbox` zelené; testy na main nekompilují (chybí `kinds`).

@@ -139,6 +139,11 @@ final class Monitor: ObservableObject {
             lines.append(String(describing: s.battery))
             lines.append(String(describing: s.network))
             lines.append("thermal state: \(s.thermalState.fullName)")
+            // Nové sekce jsou na konci, aby stávající řádky zůstaly beze změny (vstup compatibility reportů).
+            lines.append(contentsOf: DumpFormat.coreLines())
+            if let channels = IOReport.allChannelInfo() {
+                lines.append(contentsOf: channels.map { DumpFormat.channelLine(group: $0.group, subGroup: $0.subGroup, name: $0.name, unit: $0.unit) })
+            }
             return lines.joined(separator: "\n")
         }
     }
