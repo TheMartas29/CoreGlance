@@ -2,6 +2,10 @@
 
 ## [Nevydáno]
 
+### Opraveno
+
+- Frekvence CPU a GPU se čtou i z tabulek v uzlech `pmgr-child` a jádra „MCPU“ se počítají do výkonného clusteru, takže na Apple M6 nemají být frekvence nulové (ověření na živém M6 zbývá). Na M1–M4 se nic nemění. (#51)
+
 ## [0.2.10] – 2026-11-12
 
 ### Změněno

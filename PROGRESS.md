@@ -64,3 +64,8 @@
 - Co: přepínač přejmenován na „Check for updates automatically“ (nic neinstaluje); nečitelná odpověď API nemaže `knownRelease` ani neukládá `lastUpdateCheck`; `html_url` se ověřuje jako stažení (jinak odkaz na latest); tag `V0.3.0` → „0.3.0“; CONTRIBUTING zmiňuje Update/.
 - Výsledek: `swift test --disable-sandbox` 60 testů zelených; 3 nové testy před opravou padaly.
 - Neřešeno: screenshot Nastavení (QA/grafik); instalace a SHA-256 jsou v navazujícím tiketu; hodinové opakování po chybě (krit. 5) ponecháno záměrně.
+
+## 2026-11-12 — coreglance#51 DVFS tabulky z pmgr-child a MCPUn do P clusteru
+- Co: čisté funkce `SoCMetrics.parseDVFS`, `mergeDVFSTables`, `cluster(forChannel:)`; `readDVFSTables` čte `pmgr` i `pmgr-child*` (pmgr první, takže M1–M4 beze změny); `sample()` počítá E→E, P/M→P. Testy nad bajty zaznamenanými na M6 (`DVFSTests`).
+- Výsledek: `swift test --disable-sandbox` 86 testů zelených, `swift build` bez varování. Nové testy na base nejdou ani přeložit (funkce neexistují).
+- Další krok: ověření na živém M6 (`--dump` ukáže GHz > 0) musí udělat člověk na stroji.
