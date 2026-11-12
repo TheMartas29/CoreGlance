@@ -39,6 +39,16 @@ final class SensorLogicTests: XCTestCase {
         XCTAssertEqual(SMC.decode(type: "ui32", bytes: [0xFF, 0xFF, 0xFF, 0xFF]), 4_294_967_295)
     }
 
+    // si8 is two's complement: 0xFF = -1, 0x80 = -128 (Int8 range), while ui8 stays unsigned.
+    func testSMCDecodesSignedInt8() {
+        XCTAssertEqual(SMC.decode(type: "si8 ", bytes: [0xFF]), -1)
+        XCTAssertEqual(SMC.decode(type: "si8 ", bytes: [0x80]), -128)
+        XCTAssertEqual(SMC.decode(type: "si8 ", bytes: [0x7F]), 127)
+        XCTAssertEqual(SMC.decode(type: "si8 ", bytes: [0x2A]), 42)
+        XCTAssertEqual(SMC.decode(type: "ui8 ", bytes: [0xFF]), 255)
+        XCTAssertNil(SMC.decode(type: "si8 ", bytes: []))
+    }
+
     func testSMCRejectsTooShortInput() {
         XCTAssertNil(SMC.decode(type: "sp78", bytes: [0x1A]))
         XCTAssertNil(SMC.decode(type: "ui32", bytes: [1, 2, 3]))

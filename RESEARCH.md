@@ -121,9 +121,9 @@ The `CPU Stats` legends in the registry list these channels: `EACC_ECPU0`…`EAC
 - **`hw.perflevel*`.** `sysctl` is refused in the sandbox (`sysctl: sysctl fmt -1 1024 1: Operation not permitted`), so the number of performance levels and their sizes were not read. They are not needed for the fixes below.
 
 ### Proposed fixes (small, tested once a test target exists)
-1. `SoCMetrics.readDVFSTables`: read nodes whose name is `pmgr` **or starts with `pmgr-child`**, keeping the first value found per key so the M4 behavior (tables on `pmgr`) does not change.
-2. `CPULoad.detectKinds`: map `"M"` to `.performance` (M cores run on the P-cluster DVFS table, evidence 2).
-3. `SoCMetrics.sample`: also sum `MCPUn` residency into the P cluster.
+1. **DONE (#51, verification on a live M6 — `--dump` shows GHz > 0 — still pending, needs a human at the machine).** `SoCMetrics.readDVFSTables`: read nodes whose name is `pmgr` **or starts with `pmgr-child`**, keeping the first value found per key so the M4 behavior (tables on `pmgr`) does not change.
+2. `CPULoad.detectKinds`: map `"M"` to `.performance` (M cores run on the P-cluster DVFS table, evidence 2). **Done in #54** as the pure `CPULoad.kinds(entries:count:perflevel:)` with unit tests; a separate `CoreKind` for the middle tier is deferred until data from the M6.
+3. **DONE (#51, live M6 verification pending).** `SoCMetrics.sample`: also sum `MCPUn` residency into the P cluster.
 4. `cpuWatts`: log the live Energy Model channel list on the M6, then accept the real name (probably a sum of per-cluster channels).
 
 Estimate: about 40–80 changed lines for 1–3, plus tests. Tests need a test target and a way to feed recorded data (`Package.swift` has none, T01, outside this ticket's allowed files), so the fixes are left to follow-up tickets. Fail-soft stays: missing tables keep showing "–".

@@ -6,6 +6,24 @@
 
 - Výpočet paměti aplikací už nespadne, když systém hlásí víc vymazatelné paměti než vnitřní paměti; hodnota se ořízne na nulu. (#53)
 
+## [0.3.2] – 2026-11-12
+
+### Opraveno
+
+- Záporné hodnoty senzorů typu si8 se čtou správně (např. -1 místo 255). (#52)
+
+## [0.3.1] – 2026-11-12
+
+### Opraveno
+
+- Na čipech s třetím typem jader (cluster-type „M“) se jádra už neoznačují „?“, ale počítají se k výkonným (P). Určení typu jádra je oddělené od čtení systému a pokryté testy. (#54)
+
+## [0.3.0] – 2026-11-12
+
+### Opraveno
+
+- Frekvence CPU a GPU se čtou i z tabulek v uzlech `pmgr-child` a jádra „MCPU“ se počítají do výkonného clusteru, takže na Apple M6 nemají být frekvence nulové (ověření na živém M6 zbývá). Na M1–M4 se nic nemění. (#51)
+
 ## [0.2.10] – 2026-11-12
 
 ### Změněno

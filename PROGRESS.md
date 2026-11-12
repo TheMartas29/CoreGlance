@@ -65,7 +65,21 @@
 - Výsledek: `swift test --disable-sandbox` 60 testů zelených; 3 nové testy před opravou padaly.
 - Neřešeno: screenshot Nastavení (QA/grafik); instalace a SHA-256 jsou v navazujícím tiketu; hodinové opakování po chybě (krit. 5) ponecháno záměrně.
 
+## 2026-11-12 — coreglance#54 čisté určení typu jader
+- Co: `CPULoad.kinds(entries:count:perflevel:)` čistá funkce („M“ → performance, neznámé → unknown, id mimo rozsah ignorováno, fallback hw.perflevel, Intel unknown); `detectKinds` jen sbírá data; 7 testů (CoreKindsTests). CHANGELOG, poznámka v RESEARCH.md.
+- Výsledek: `swift build` bez varování, `swift test --disable-sandbox` zelené; testy na main nekompilují (chybí `kinds`).
+- Další krok: QA; samostatný CoreKind pro střední tier až po datech z M6.
+
+## 2026-11-12 — coreglance#51 DVFS tabulky z pmgr-child a MCPUn do P clusteru
+- Co: čisté funkce `SoCMetrics.parseDVFS`, `mergeDVFSTables`, `cluster(forChannel:)`; `readDVFSTables` čte `pmgr` i `pmgr-child*` (pmgr první, takže M1–M4 beze změny); `sample()` počítá E→E, P/M→P. Testy nad bajty zaznamenanými na M6 (`DVFSTests`).
+- Výsledek: `swift test --disable-sandbox` 86 testů zelených, `swift build` bez varování. Nové testy na base nejdou ani přeložit (funkce neexistují).
+- Další krok: ověření na živém M6 (`--dump` ukáže GHz > 0) musí udělat člověk na stroji.
+
+## 2026-11-12 — coreglance#52 SMC.decode: si8 jako znaménkový
+- Co: `si8 ` se dekóduje přes `Int8(bitPattern:)` (0xFF → -1), `ui8 ` beze změny; nový test `testSMCDecodesSignedInt8`.
+- Výsledek: `swift test --disable-sandbox` před opravou 2 selhání (-1, -128), po opravě zelené.
+
 ## 2026-11-13 — coreglance#53 MemoryReader.stats: podtečení
 - Co: `app` v `MemoryReader.stats` se ořízne na 0, když purgeable > internal (UInt32 odečet padal); testy pro všechny prefixy `isVirtual`, `dt` rozdělen na dva testy; `sample()` používá `Counters`.
-- Výsledek: `swift test --disable-sandbox` 80 testů zelených; nový test podtečení na starém kódu padá (trap).
+- Výsledek: nový test podtečení na starém kódu padá (trap); celá sada po merge main viz níže.
 - Další krok: QA.
