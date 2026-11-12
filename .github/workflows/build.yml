@@ -36,10 +36,26 @@ jobs:
         run: |
           swift test 2>&1 | tee test.log
           ! grep -i 'warning:' test.log
+      - name: Version script tests
+        shell: bash
+        run: bash scripts/test-apply-version.sh
       - name: Build universal app
         run: |
           if [ "${GITHUB_REF_TYPE}" = "tag" ]; then VERSION="${GITHUB_REF_NAME#v}"; export VERSION; fi
           scripts/build-app.sh
+      - name: Check version in built app
+        shell: bash
+        run: |
+          PLIST=build/CoreGlance.app/Contents/Info.plist
+          got_build="$(plutil -extract CFBundleVersion raw "$PLIST")"
+          got_ver="$(plutil -extract CFBundleShortVersionString raw "$PLIST")"
+          echo "app version $got_ver ($got_build)"
+          if [ "${GITHUB_REF_TYPE}" = "tag" ] && [ "$got_ver" != "${GITHUB_REF_NAME#v}" ]; then
+            echo "expected version ${GITHUB_REF_NAME#v}"; exit 1
+          fi
+          if [ "$GITHUB_RUN_NUMBER" -gt 5 ] && [ "$got_build" != "$GITHUB_RUN_NUMBER" ]; then
+            echo "expected build number $GITHUB_RUN_NUMBER"; exit 1
+          fi
       - name: Zip
         run: cd build && ditto -c -k --keepParent CoreGlance.app CoreGlance.zip
       - uses: actions/upload-artifact@v4

@@ -23,6 +23,7 @@ swift scripts/make-icon.swift       # regenerate the app icon
 Code layout:
 
 - `Sources/CoreGlance/Sensors/` holds one file per data source. Each reader returns a plain struct.
+- `Sources/CoreGlance/Update/` checks GitHub Releases: `UpdateLogic.swift` is pure (versions, JSON parsing, schedule), `Updater.swift` does the timer and network.
 - `Monitor.swift` polls the readers on a background queue and publishes a `Snapshot`.
 - `UI/StatusBarRenderer.swift` draws the menu bar item; `UI/PopoverView.swift` and `UI/SettingsView.swift` are the SwiftUI popover.
 

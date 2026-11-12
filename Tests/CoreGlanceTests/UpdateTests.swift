@@ -57,6 +57,21 @@ final class UpdateLogicTests: XCTestCase {
         XCTAssertNil(UpdateLogic.parseRelease(Data(#"{"message":"API rate limit exceeded"}"#.utf8)))
     }
 
+    func testUppercaseVTagIsShownWithoutPrefix() throws {   // #30 krit. 6/10
+        let info = try XCTUnwrap(UpdateLogic.parseRelease(releaseJSON(tag: "V0.3.0")))
+        XCTAssertEqual(info.version, "0.3.0")
+    }
+
+    func testForeignOrInsecureReleasePageFallsBackToLatestPage() throws {   // #30 krit. 9
+        let fallback = "https://github.com/TheMartas29/CoreGlance/releases/latest"
+        for page in ["https://evil.example.com/x", "http://github.com/x", "javascript:alert(1)"] {
+            let json = Data("""
+            {"tag_name":"v0.3.0","html_url":"\(page)","assets":[{"name":"CoreGlance.zip","browser_download_url":"https://github.com/x/CoreGlance.zip"}]}
+            """.utf8)
+            XCTAssertEqual(UpdateLogic.parseRelease(json)?.pageURL.absoluteString, fallback, page)
+        }
+    }
+
     func testRejectsForeignOrInsecureDownloadHost() {
         for url in ["https://evil.example.com/CoreGlance.zip", "http://github.com/CoreGlance.zip", "https://notgithub.com/CoreGlance.zip"] {
             let assets = #"[{"name":"CoreGlance.zip","browser_download_url":"\#(url)"}]"#
@@ -198,6 +213,20 @@ final class UpdaterTests: XCTestCase {
         await u.tick()
         XCTAssertNil(u.availableUpdate)
         XCTAssertEqual(net.jsonCalls, 2)             // retried after the failure, not after an answered request
+    }
+
+    func testUnreadableAnswerKeepsKnownOfferAndDoesNotCountAsCheck() async {   // #30 krit. 2
+        let net = FakeNetwork()
+        net.json = release("0.3.0")
+        let prefs = Preferences(defaults: defaults)
+        let u = updater(prefs, net)
+        let t0 = Date(timeIntervalSince1970: 1_800_000_000)
+        await u.tick(now: t0)
+        XCTAssertEqual(u.availableUpdate?.version, "0.3.0")
+        net.json = Data(#"{"message":"API rate limit exceeded"}"#.utf8)
+        await u.tick(now: t0.addingTimeInterval(24 * 3600))
+        XCTAssertEqual(u.availableUpdate?.version, "0.3.0")        // offer is not lost
+        XCTAssertEqual(prefs.lastUpdateCheck, t0)                   // not recorded as a completed check
     }
 
     func testNoVersionMeansUpdaterIsInert() async {   // `swift run` binary without Info.plist
