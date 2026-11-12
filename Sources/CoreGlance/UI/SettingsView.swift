@@ -63,7 +63,7 @@ struct SettingsView: View {
                 ForEach([1.0, 2, 3, 5, 10], id: \.self) { Text("\(Int($0)) s").tag($0) }
             }
             Toggle("Launch at login", isOn: Binding(get: { prefs.launchAtLogin }, set: { prefs.launchAtLogin = $0 }))
-            Toggle("Automatically install updates", isOn: $prefs.autoUpdate)
+            Toggle("Check for updates automatically", isOn: $prefs.autoUpdate)
             if let update = updater.availableUpdate {
                 HStack(spacing: 6) {
                     Text("Update available: \(update.version)").font(.caption)
