@@ -67,7 +67,7 @@ enum MemoryReader {
     static func stats(from vm: vm_statistics64, pageSize page: Double, total: Double) -> MemoryStats {
         var s = MemoryStats()
         s.total = total
-        s.app = Double(vm.internal_page_count - vm.purgeable_count) * page
+        s.app = Double(vm.internal_page_count > vm.purgeable_count ? vm.internal_page_count - vm.purgeable_count : 0) * page
         s.wired = Double(vm.wire_count) * page
         s.compressed = Double(vm.compressor_page_count) * page
         s.cached = Double(vm.external_page_count + vm.purgeable_count) * page
@@ -176,7 +176,7 @@ enum BatteryReader {
 struct NetworkStats { var down: Double = 0; var up: Double = 0 }  // bytes per second
 
 final class NetworkReader {
-    private var previous: [String: (inBytes: UInt32, outBytes: UInt32)] = [:]
+    private var previous: Counters = [:]
     private var previousTime: Date?
 
     typealias Counters = [String: (inBytes: UInt32, outBytes: UInt32)]
@@ -200,7 +200,7 @@ final class NetworkReader {
     }
 
     func sample() -> NetworkStats {
-        var current: [String: (inBytes: UInt32, outBytes: UInt32)] = [:]
+        var current: Counters = [:]
         var addrs: UnsafeMutablePointer<ifaddrs>?
         guard getifaddrs(&addrs) == 0, let first = addrs else { return NetworkStats() }
         defer { freeifaddrs(addrs) }

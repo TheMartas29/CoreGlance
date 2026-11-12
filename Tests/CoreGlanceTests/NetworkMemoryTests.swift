@@ -33,22 +33,31 @@ final class NetworkRateTests: XCTestCase {
         XCTAssertEqual(r.up, 30, accuracy: 1e-9)
     }
 
-    func testNonPositiveDtIsClampedToOneMillisecond() {
-        // dt je ořezán na 0.001 s: 5 B / 0.001 s = 5000 B/s (nulový i záporný dt).
-        for dt in [0.0, -3.0] {
-            let r = NetworkReader.rate(previous: ["en0": (inBytes: 0, outBytes: 0)],
-                                       current: ["en0": (inBytes: 5, outBytes: 5)], dt: dt)
-            XCTAssertEqual(r.down, 5000, accuracy: 1e-6)
-            XCTAssertEqual(r.up, 5000, accuracy: 1e-6)
-        }
+    private func rateWithDt(_ dt: TimeInterval) -> NetworkStats {
+        NetworkReader.rate(previous: ["en0": (inBytes: 0, outBytes: 0)],
+                           current: ["en0": (inBytes: 5, outBytes: 5)], dt: dt)
+    }
+
+    func testZeroDtIsClampedToOneMillisecond() {
+        // dt je ořezán na 0.001 s: 5 B / 0.001 s = 5000 B/s.
+        let r = rateWithDt(0)
+        XCTAssertEqual(r.down, 5000, accuracy: 1e-6)
+        XCTAssertEqual(r.up, 5000, accuracy: 1e-6)
+    }
+
+    func testNegativeDtIsClampedToOneMillisecond() {
+        let r = rateWithDt(-3)
+        XCTAssertEqual(r.down, 5000, accuracy: 1e-6)
+        XCTAssertEqual(r.up, 5000, accuracy: 1e-6)
     }
 
     func testIsVirtual() {
-        XCTAssertTrue(NetworkReader.isVirtual("utun0"))
-        XCTAssertTrue(NetworkReader.isVirtual("awdl0"))
-        XCTAssertTrue(NetworkReader.isVirtual("bridge0"))
-        XCTAssertTrue(NetworkReader.isVirtual("llw0"))
-        XCTAssertFalse(NetworkReader.isVirtual("en0"))
+        for name in ["utun0", "awdl0", "bridge0", "llw0", "gif0", "stf0", "anpi0", "ap1"] {
+            XCTAssertTrue(NetworkReader.isVirtual(name), name)
+        }
+        for name in ["en0", "en1"] {
+            XCTAssertFalse(NetworkReader.isVirtual(name), name)
+        }
     }
 }
 
@@ -69,5 +78,19 @@ final class MemoryStatsTests: XCTestCase {
         XCTAssertEqual(s.cached, 500 * 16384)
         XCTAssertEqual(s.used, (900 + 300 + 200) * 16384)
         XCTAssertEqual(s.total, 8_000_000_000)
+    }
+
+    func testPurgeableAboveInternalDoesNotUnderflow() {
+        var vm = vm_statistics64()
+        vm.internal_page_count = 100
+        vm.purgeable_count = 150
+        vm.external_page_count = 10
+        vm.wire_count = 20
+        vm.compressor_page_count = 30
+        let s = MemoryReader.stats(from: vm, pageSize: 16384, total: 1_000_000)
+        // app = max(100 − 150, 0) = 0; cached = (10 + 150) × 16384; used = 0 + 20 + 30 stránek.
+        XCTAssertEqual(s.app, 0)
+        XCTAssertEqual(s.cached, 160 * 16384)
+        XCTAssertEqual(s.used, 50 * 16384)
     }
 }

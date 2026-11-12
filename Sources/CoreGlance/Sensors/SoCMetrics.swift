@@ -44,21 +44,51 @@ final class SoCMetrics {
 
     /// The `pmgr` node stores (frequency, voltage) UInt32 pairs. M1–M3 store CPU frequency
     /// in Hz; M4 stores CPU frequency in kHz (Hz no longer fits 32 bits) — detected by magnitude.
+    /// M6 keeps the tables in `pmgr-child@…` nodes instead of `pmgr` (RESEARCH.md, #2).
     private static func readDVFSTables() -> [String: [Double]] {
-        var result: [String: [Double]] = [:]
+        var nodes: [(name: String, tables: [String: Data])] = []
         IORegistry.forEach(class: "AppleARMIODevice") { entry in
             var name = [CChar](repeating: 0, count: 128)
-            guard IORegistryEntryGetName(entry, &name) == kIOReturnSuccess, String(cString: name) == "pmgr",
+            guard IORegistryEntryGetName(entry, &name) == kIOReturnSuccess,
                   let props = IORegistry.properties(entry) else { return }
+            var tables: [String: Data] = [:]
             for (key, value) in props where key.hasPrefix("voltage-states") {
-                guard let data = value as? Data else { continue }
-                let raw: [UInt32] = data.withUnsafeBytes { buf in
-                    stride(from: 0, to: buf.count - 7, by: 8).map { buf.loadUnaligned(fromByteOffset: $0, as: UInt32.self) }
-                }
-                result[key] = raw.map(Self.megahertz)
+                if let data = value as? Data { tables[key] = data }
+            }
+            nodes.append((String(cString: name), tables))
+        }
+        // `pmgr` first, so chips with tables on both nodes (M1–M4) keep today's values.
+        let ordered = nodes.filter { $0.name == "pmgr" } + nodes.filter { $0.name != "pmgr" }
+        return mergeDVFSTables(ordered)
+    }
+
+    /// Data of `voltage-states*` -> MHz of the (frequency, voltage) UInt32 pairs; incomplete trailing bytes are dropped.
+    static func parseDVFS(_ data: Data) -> [Double] {
+        data.withUnsafeBytes { buf in
+            stride(from: 0, to: buf.count - 7, by: 8).map { megahertz(buf.loadUnaligned(fromByteOffset: $0, as: UInt32.self)) }
+        }
+    }
+
+    /// Merges `voltage-states*` tables of `pmgr` and `pmgr-child*` nodes; the first node in input order wins per key.
+    static func mergeDVFSTables(_ nodes: [(name: String, tables: [String: Data])]) -> [String: [Double]] {
+        var result: [String: [Double]] = [:]
+        for node in nodes where node.name == "pmgr" || node.name.hasPrefix("pmgr-child") {
+            for (key, data) in node.tables where key.hasPrefix("voltage-states") && result[key] == nil {
+                result[key] = parseDVFS(data)
             }
         }
         return result
+    }
+
+    enum Cluster { case efficiency, performance }
+
+    /// E… -> efficiency, P… / M… -> performance (M6 "MCPU" cores run on the P-cluster table).
+    static func cluster(forChannel name: String) -> Cluster? {
+        switch name.first {
+        case "E": return .efficiency
+        case "P", "M": return .performance
+        default: return nil
+        }
     }
 
     private static let inactiveStates: Set<String> = ["IDLE", "DOWN", "OFF"]
@@ -94,11 +124,15 @@ final class SoCMetrics {
         for c in channels {
             switch (c.group, c.subGroup) {
             case ("CPU Stats", "CPU Core Performance States"):
-                // Channels are named ECPUn / PCPUn (plus PCPU1n etc. on chips with two P clusters).
-                if c.name.hasPrefix("E") {
+                // Channels are named ECPUn / PCPUn (plus PCPU1n etc. on chips with two P clusters),
+                // on M6 EACC_ECPUn / PACC0_PCPUn / PACC0_MCPUn.
+                switch Self.cluster(forChannel: c.name) {
+                case .efficiency?:
                     let r = residency(c, freqs: eFreqs); e.active += r.active; e.weighted += r.weighted
-                } else if c.name.hasPrefix("P") {
+                case .performance?:
                     let r = residency(c, freqs: pFreqs); p.active += r.active; p.weighted += r.weighted
+                case nil:
+                    break
                 }
             case ("GPU Stats", "GPU Performance States") where c.name == "GPUPH":
                 let r = residency(c, freqs: gpuFreqs)

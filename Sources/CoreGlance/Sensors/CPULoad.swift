@@ -17,24 +17,45 @@ final class CPULoad {
     /// and `logical-cpu-id`, which is the index used by host_processor_info.
     /// Falls back to hw.perflevel counts (E cores enumerate first), Intel -> all unknown.
     private static func detectKinds(count: Int) -> [CoreKind] {
-        var kinds = [CoreKind](repeating: .unknown, count: count)
+        var entries: [(clusterType: String, logicalID: Int)] = []
         var iterator: io_iterator_t = 0
         let root = IORegistryEntryFromPath(kIOMainPortDefault, "IODeviceTree:/cpus")
         if root != 0, IORegistryEntryGetChildIterator(root, kIODeviceTreePlane, &iterator) == kIOReturnSuccess {
-            var found = false
             while case let entry = IOIteratorNext(iterator), entry != 0 {
                 defer { IOObjectRelease(entry) }
                 guard let type = IORegistry.data(entry, "cluster-type").flatMap({ String(bytes: $0.prefix { $0 != 0 }, encoding: .ascii) }),
-                      let id = IORegistry.int(entry, "logical-cpu-id"), id < count else { continue }
-                kinds[id] = type == "P" ? .performance : (type == "E" ? .efficiency : .unknown)
-                found = true
+                      let id = IORegistry.int(entry, "logical-cpu-id") else { continue }
+                entries.append((clusterType: type, logicalID: id))
             }
             IOObjectRelease(iterator)
             IOObjectRelease(root)
-            if found { return kinds }
         }
-        if let p = Sysctl.int("hw.perflevel0.logicalcpu"), let e = Sysctl.int("hw.perflevel1.logicalcpu"), p + e == count {
-            return Array(repeating: .efficiency, count: e) + Array(repeating: .performance, count: p)
+        var perflevel: (p: Int, e: Int)?
+        if let p = Sysctl.int("hw.perflevel0.logicalcpu"), let e = Sysctl.int("hw.perflevel1.logicalcpu") {
+            perflevel = (p: p, e: e)
+        }
+        return kinds(entries: entries, count: count, perflevel: perflevel)
+    }
+
+    /// Pure core-kind resolution. `entries` come from the device tree (`cluster-type`, `logical-cpu-id`).
+    /// "P" and "M" (middle tier, shares the P cluster DVFS table, see RESEARCH.md) -> performance, "E" -> efficiency,
+    /// anything else -> unknown. Entries with logicalID outside 0..<count are ignored. When no entry
+    /// is usable, `perflevel` (E cores enumerate first) is used if it adds up to `count`; otherwise all unknown (Intel).
+    static func kinds(entries: [(clusterType: String, logicalID: Int)], count: Int,
+                      perflevel: (p: Int, e: Int)?) -> [CoreKind] {
+        var kinds = [CoreKind](repeating: .unknown, count: max(count, 0))
+        var found = false
+        for entry in entries where entry.logicalID >= 0 && entry.logicalID < kinds.count {
+            switch entry.clusterType {
+            case "P", "M": kinds[entry.logicalID] = .performance
+            case "E": kinds[entry.logicalID] = .efficiency
+            default: kinds[entry.logicalID] = .unknown
+            }
+            found = true
+        }
+        if found { return kinds }
+        if let perflevel, perflevel.p >= 0, perflevel.e >= 0, perflevel.p + perflevel.e == count {
+            return Array(repeating: .efficiency, count: perflevel.e) + Array(repeating: .performance, count: perflevel.p)
         }
         return kinds
     }
