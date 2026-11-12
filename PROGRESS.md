@@ -64,3 +64,8 @@
 - Co: přepínač přejmenován na „Check for updates automatically“ (nic neinstaluje); nečitelná odpověď API nemaže `knownRelease` ani neukládá `lastUpdateCheck`; `html_url` se ověřuje jako stažení (jinak odkaz na latest); tag `V0.3.0` → „0.3.0“; CONTRIBUTING zmiňuje Update/.
 - Výsledek: `swift test --disable-sandbox` 60 testů zelených; 3 nové testy před opravou padaly.
 - Neřešeno: screenshot Nastavení (QA/grafik); instalace a SHA-256 jsou v navazujícím tiketu; hodinové opakování po chybě (krit. 5) ponecháno záměrně.
+
+## 2026-11-13 — coreglance#53 MemoryReader.stats: podtečení
+- Co: `app` v `MemoryReader.stats` se ořízne na 0, když purgeable > internal (UInt32 odečet padal); testy pro všechny prefixy `isVirtual`, `dt` rozdělen na dva testy; `sample()` používá `Counters`.
+- Výsledek: `swift test --disable-sandbox` 80 testů zelených; nový test podtečení na starém kódu padá (trap).
+- Další krok: QA.
