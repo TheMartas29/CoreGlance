@@ -64,3 +64,8 @@
 - Co: přepínač přejmenován na „Check for updates automatically“ (nic neinstaluje); nečitelná odpověď API nemaže `knownRelease` ani neukládá `lastUpdateCheck`; `html_url` se ověřuje jako stažení (jinak odkaz na latest); tag `V0.3.0` → „0.3.0“; CONTRIBUTING zmiňuje Update/.
 - Výsledek: `swift test --disable-sandbox` 60 testů zelených; 3 nové testy před opravou padaly.
 - Neřešeno: screenshot Nastavení (QA/grafik); instalace a SHA-256 jsou v navazujícím tiketu; hodinové opakování po chybě (krit. 5) ponecháno záměrně.
+
+## 2026-11-12 — coreglance#54 čisté určení typu jader
+- Co: `CPULoad.kinds(entries:count:perflevel:)` čistá funkce („M“ → performance, neznámé → unknown, id mimo rozsah ignorováno, fallback hw.perflevel, Intel unknown); `detectKinds` jen sbírá data; 7 testů (CoreKindsTests). CHANGELOG, poznámka v RESEARCH.md.
+- Výsledek: `swift build` bez varování, `swift test --disable-sandbox` zelené; testy na main nekompilují (chybí `kinds`).
+- Další krok: QA; samostatný CoreKind pro střední tier až po datech z M6.

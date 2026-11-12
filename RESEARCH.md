@@ -122,7 +122,7 @@ The `CPU Stats` legends in the registry list these channels: `EACC_ECPU0`…`EAC
 
 ### Proposed fixes (small, tested once a test target exists)
 1. `SoCMetrics.readDVFSTables`: read nodes whose name is `pmgr` **or starts with `pmgr-child`**, keeping the first value found per key so the M4 behavior (tables on `pmgr`) does not change.
-2. `CPULoad.detectKinds`: map `"M"` to `.performance` (M cores run on the P-cluster DVFS table, evidence 2).
+2. `CPULoad.detectKinds`: map `"M"` to `.performance` (M cores run on the P-cluster DVFS table, evidence 2). **Done in #54** as the pure `CPULoad.kinds(entries:count:perflevel:)` with unit tests; a separate `CoreKind` for the middle tier is deferred until data from the M6.
 3. `SoCMetrics.sample`: also sum `MCPUn` residency into the P cluster.
 4. `cpuWatts`: log the live Energy Model channel list on the M6, then accept the real name (probably a sum of per-cluster channels).
 

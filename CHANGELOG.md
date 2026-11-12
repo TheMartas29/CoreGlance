@@ -2,6 +2,10 @@
 
 ## [Nevydáno]
 
+### Opraveno
+
+- Na čipech s třetím typem jader (cluster-type „M“) se jádra už neoznačují „?“, ale počítají se k výkonným (P). Určení typu jádra je oddělené od čtení systému a pokryté testy. (#54)
+
 ## [0.2.10] – 2026-11-12
 
 ### Změněno
