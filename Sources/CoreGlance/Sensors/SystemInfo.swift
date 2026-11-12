@@ -63,6 +63,18 @@ struct MemoryStats {
 }
 
 enum MemoryReader {
+    /// Pure conversion of page counts to bytes. Same formula as Activity Monitor's "Memory Used" = App + Wired + Compressed.
+    static func stats(from vm: vm_statistics64, pageSize page: Double, total: Double) -> MemoryStats {
+        var s = MemoryStats()
+        s.total = total
+        s.app = Double(vm.internal_page_count - vm.purgeable_count) * page
+        s.wired = Double(vm.wire_count) * page
+        s.compressed = Double(vm.compressor_page_count) * page
+        s.cached = Double(vm.external_page_count + vm.purgeable_count) * page
+        s.used = s.app + s.wired + s.compressed
+        return s
+    }
+
     static func read() -> MemoryStats {
         var s = MemoryStats()
         s.total = Double(ProcessInfo.processInfo.physicalMemory)
@@ -72,13 +84,7 @@ enum MemoryReader {
             $0.withMemoryRebound(to: integer_t.self, capacity: Int(count)) { host_statistics64(mach_host_self(), HOST_VM_INFO64, $0, &count) }
         }
         if kr == KERN_SUCCESS {
-            let page = Double(vm_kernel_page_size)
-            // Same formula as Activity Monitor's "Memory Used" = App + Wired + Compressed.
-            s.app = Double(vm.internal_page_count - vm.purgeable_count) * page
-            s.wired = Double(vm.wire_count) * page
-            s.compressed = Double(vm.compressor_page_count) * page
-            s.cached = Double(vm.external_page_count + vm.purgeable_count) * page
-            s.used = s.app + s.wired + s.compressed
+            s = stats(from: vm, pageSize: Double(vm_kernel_page_size), total: s.total)
         }
         var swap = xsw_usage()
         var size = MemoryLayout<xsw_usage>.size
@@ -173,6 +179,26 @@ final class NetworkReader {
     private var previous: [String: (inBytes: UInt32, outBytes: UInt32)] = [:]
     private var previousTime: Date?
 
+    typealias Counters = [String: (inBytes: UInt32, outBytes: UInt32)]
+
+    /// Virtual interfaces that would double count traffic.
+    static func isVirtual(_ name: String) -> Bool {
+        ["utun", "awdl", "llw", "bridge", "gif", "stf", "anpi", "ap"].contains(where: name.hasPrefix)
+    }
+
+    /// Bytes per second from two counter snapshots. Counters are 32-bit; wrapping subtraction handles the overflow.
+    /// Interfaces missing from `previous` are ignored; `dt` is clamped to at least 1 ms.
+    static func rate(previous: Counters, current: Counters, dt: TimeInterval) -> NetworkStats {
+        let dt = max(dt, 0.001)
+        var stats = NetworkStats()
+        for (name, value) in current {
+            guard let old = previous[name] else { continue }
+            stats.down += Double(value.inBytes &- old.inBytes) / dt
+            stats.up += Double(value.outBytes &- old.outBytes) / dt
+        }
+        return stats
+    }
+
     func sample() -> NetworkStats {
         var current: [String: (inBytes: UInt32, outBytes: UInt32)] = [:]
         var addrs: UnsafeMutablePointer<ifaddrs>?
@@ -183,23 +209,14 @@ final class NetworkReader {
             guard ifa.ifa_addr?.pointee.sa_family == UInt8(AF_LINK), let data = ifa.ifa_data,
                   ifa.ifa_flags & UInt32(IFF_UP) != 0, ifa.ifa_flags & UInt32(IFF_LOOPBACK) == 0 else { continue }
             let name = String(cString: ifa.ifa_name)
-            // Skip virtual interfaces that would double count traffic.
-            if ["utun", "awdl", "llw", "bridge", "gif", "stf", "anpi", "ap"].contains(where: name.hasPrefix) { continue }
+            if Self.isVirtual(name) { continue }
             let d = data.assumingMemoryBound(to: if_data.self).pointee
             current[name] = (d.ifi_ibytes, d.ifi_obytes)
         }
         let now = Date()
         defer { previous = current; previousTime = now }
         guard let last = previousTime else { return NetworkStats() }
-        let dt = max(now.timeIntervalSince(last), 0.001)
-        var stats = NetworkStats()
-        for (name, value) in current {
-            guard let old = previous[name] else { continue }
-            // Counters are 32-bit; wrapping subtraction handles the overflow.
-            stats.down += Double(value.inBytes &- old.inBytes) / dt
-            stats.up += Double(value.outBytes &- old.outBytes) / dt
-        }
-        return stats
+        return Self.rate(previous: previous, current: current, dt: now.timeIntervalSince(last))
     }
 }
 
