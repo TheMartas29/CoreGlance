@@ -2,6 +2,8 @@
 
 ## [Nevydáno]
 
+## [0.3.3] – 2026-11-12
+
 ### Opraveno
 
 - Výpočet paměti aplikací už nespadne, když systém hlásí víc vymazatelné paměti než vnitřní paměti; hodnota se ořízne na nulu. (#53)
