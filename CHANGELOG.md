@@ -2,6 +2,8 @@
 
 ## [Nevydáno]
 
+## [0.2.9] – 2026-11-12
+
 ### Změněno
 
 - Čtení stavu baterie je oddělené od systémových volání a pokryté testy; zobrazení se nemění. (#37)
