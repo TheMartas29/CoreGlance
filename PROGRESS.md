@@ -88,3 +88,8 @@
 - Co: `app` v `MemoryReader.stats` se ořízne na 0, když purgeable > internal (UInt32 odečet padal); testy pro všechny prefixy `isVirtual`, `dt` rozdělen na dva testy; `sample()` používá `Counters`.
 - Výsledek: nový test podtečení na starém kódu padá (trap); celá sada po merge main viz níže.
 - Další krok: QA.
+
+## 2026-11-13 — coreglance#66 cpuWatts na M6: výběr energetického kanálu
+- Co: výpis `--dump` ukázal, že `Energy Model` na M6 má jen GPU a PCIe kanály, žádný CPU → bez hádání zůstává `cpuWatts` nil. Čistá `SoCMetrics.isCPUEnergyChannel`, `joulesIfKnown` (neznámá jednotka = nil, ne 0), `cpuJoules`; `sample()` používá predikát a sčítá. Fixture z výpisu v `CPUEnergyTests`. Výpis kanálů a rozhodnutí v RESEARCH.md.
+- Výsledek: `swift build` bez varování, `swift test --disable-sandbox` 103 testů zelených; nové testy na main nekompilují.
+- Další krok: na živém M6 mimo sandbox ověřit, zda vzorkování nevrací CPU kanál mimo seznam (`--dump` cpuWatts != nil); jinak SMC/jiná cesta jako nový tiket.

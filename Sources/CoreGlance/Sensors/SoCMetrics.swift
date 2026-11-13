@@ -106,13 +106,33 @@ final class SoCMetrics {
         return (active, weighted)
     }
 
-    private static func joules(_ value: Int64, unit: String) -> Double {
+    /// Energy counter value -> joules; nil for a unit that is not an energy unit.
+    static func joulesIfKnown(_ value: Int64, unit: String) -> Double? {
         switch unit.trimmingCharacters(in: .whitespaces) {
         case "mJ": return Double(value) / 1e3
         case "uJ", "µJ": return Double(value) / 1e6
         case "nJ": return Double(value) / 1e9
-        default: return 0
+        default: return nil
         }
+    }
+
+    private static func joules(_ value: Int64, unit: String) -> Double {
+        joulesIfKnown(value, unit: unit) ?? 0
+    }
+
+    /// True for the channel that carries CPU energy. Only `Energy Model` / `CPU Energy` (M1–M4) is known:
+    /// the M6 dump lists no CPU energy channel there at all (RESEARCH.md, coreglance#66), so no names are guessed.
+    static func isCPUEnergyChannel(group: String, subGroup: String?, name: String, unit: String) -> Bool {
+        group == "Energy Model" && name == "CPU Energy" && joulesIfKnown(0, unit: unit) != nil
+    }
+
+    /// Σ joules of all CPU energy channels; nil when no channel matches (cpuWatts stays nil).
+    static func cpuJoules(_ channels: [(group: String, subGroup: String?, name: String, unit: String, value: Int64)]) -> Double? {
+        var total: Double?
+        for c in channels where isCPUEnergyChannel(group: c.group, subGroup: c.subGroup, name: c.name, unit: c.unit) {
+            total = (total ?? 0) + (joulesIfKnown(c.value, unit: c.unit) ?? 0)
+        }
+        return total
     }
 
     func sample() -> SoCStats? {
@@ -139,8 +159,9 @@ final class SoCMetrics {
                 s.gpuMHz = r.active > 0 ? r.weighted / r.active : 0
             case ("Energy Model", _):
                 let j = Self.joules(report.integer(c), unit: c.unit)
-                if c.name == "CPU Energy" { cpuJ = j }
-                else if c.name == "GPU Energy" { gpuJ = j }
+                if Self.isCPUEnergyChannel(group: c.group, subGroup: c.subGroup, name: c.name, unit: c.unit) {
+                    cpuJ = (cpuJ ?? 0) + j
+                } else if c.name == "GPU Energy" { gpuJ = j }
                 else if c.name == "GPU", gpuJ == nil { gpuJ = j }  // older chips have no "GPU Energy"
                 else if c.name.hasPrefix("ANE") { aneJ += j }
                 else if c.name.hasPrefix("DRAM") { dramJ += j }
