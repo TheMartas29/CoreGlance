@@ -88,3 +88,8 @@
 - Co: `app` v `MemoryReader.stats` se ořízne na 0, když purgeable > internal (UInt32 odečet padal); testy pro všechny prefixy `isVirtual`, `dt` rozdělen na dva testy; `sample()` používá `Counters`.
 - Výsledek: nový test podtečení na starém kódu padá (trap); celá sada po merge main viz níže.
 - Další krok: QA.
+
+## 2026-11-13 — coreglance#67 Kontrast výstražných barev v popoveru
+- Co: `Contrast.swift` (`contrastRatio`, `WarningPalette` s adaptivní barvou: světlý režim tmavší oranžová/červená, tmavý beze změny); `Row` ji používá pro warning/critical. Graf disku a nastavení beze změny.
+- Výsledek: `swift test --disable-sandbox` 102 testů zelených (6 nových v ContrastTests), `swift build` bez varování. Nové testy na main nejdou přeložit (symboly neexistují).
+- Další krok: QA; snapshot vyžaduje GUI session.
