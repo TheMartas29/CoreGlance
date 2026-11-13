@@ -2,6 +2,8 @@
 
 ## [Nevydáno]
 
+## [0.4.1] – 2026-11-13
+
 ### Opraveno
 
 - Výstražné hodnoty (oranžová, červená) v popoveru jsou ve světlém režimu tmavší a dobře čitelné (kontrast aspoň 4,5:1); v tmavém režimu zůstávají beze změny. (#67)
