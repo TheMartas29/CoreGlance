@@ -90,6 +90,16 @@
 - Další krok: QA.
 
 ## 2026-11-13 — coreglance#68 CI ratchet počtu testů
-- Co: `scripts/check-test-count.sh <log> [min]` vezme nejvyšší „Executed N tests“ z logu `swift test` a porovná s `scripts/min-tests.txt` (96 = skutečný počet na main); N < min nebo chybějící souhrn = nenulový kód. Test `scripts/test-check-test-count.sh` s fixture logy (stejně, víc, méně, bez souhrnu, víc řádků Executed). CONTRIBUTING věta. Zapojení do `build.yml` (nový obsah v `.puppet/github/workflows/build.yml`, dispečer kopíruje).
-- Výsledek: `sh scripts/test-check-test-count.sh` všechny ok; `swift test --disable-sandbox` = 96 testů. Test na main padá (skript neexistuje).
+- Co: `scripts/check-test-count.sh <log> [min]` vezme nejvyšší „Executed N tests“ z logu `swift test` a porovná s `scripts/min-tests.txt` (109 = skutečný počet na main po merge #66/#67); N < min nebo chybějící souhrn = nenulový kód. Test `scripts/test-check-test-count.sh` s fixture logy (stejně, víc, méně, bez souhrnu, víc řádků Executed). CONTRIBUTING věta. Zapojení do `build.yml` (nový obsah v `.puppet/github/workflows/build.yml`, dispečer kopíruje).
+- Výsledek: `sh scripts/test-check-test-count.sh` všechny ok; `swift test --disable-sandbox` = 109 testů. Test na main padá (skript neexistuje).
 - Další krok: QA; minimum se zvedá ručně při přidání testů.
+
+## 2026-11-13 — coreglance#67 Kontrast výstražných barev v popoveru
+- Co: `Contrast.swift` (`contrastRatio`, `WarningPalette` s adaptivní barvou: světlý režim tmavší oranžová/červená, tmavý beze změny); `Row` ji používá pro warning/critical. Graf disku a nastavení beze změny.
+- Výsledek: `swift test --disable-sandbox` 102 testů zelených (6 nových v ContrastTests), `swift build` bez varování. Nové testy na main nejdou přeložit (symboly neexistují).
+- Další krok: QA; snapshot vyžaduje GUI session.
+
+## 2026-11-13 — coreglance#66 cpuWatts na M6: výběr energetického kanálu
+- Co: výpis `--dump` ukázal, že `Energy Model` na M6 má jen GPU a PCIe kanály, žádný CPU → bez hádání zůstává `cpuWatts` nil. Čistá `SoCMetrics.isCPUEnergyChannel`, `joulesIfKnown` (neznámá jednotka = nil, ne 0), `cpuJoules`; `sample()` používá predikát a sčítá. Fixture z výpisu v `CPUEnergyTests`. Výpis kanálů a rozhodnutí v RESEARCH.md.
+- Výsledek: `swift build` bez varování, `swift test --disable-sandbox` 103 testů zelených; nové testy na main nekompilují.
+- Další krok: na živém M6 mimo sandbox ověřit, zda vzorkování nevrací CPU kanál mimo seznam (`--dump` cpuWatts != nil); jinak SMC/jiná cesta jako nový tiket.

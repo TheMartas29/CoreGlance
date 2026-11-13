@@ -194,7 +194,7 @@ private struct Row: View {
         HStack {
             Text(label).foregroundStyle(.secondary)
             Spacer()
-            Text(value).monospacedDigit().foregroundStyle(critical ? .red : hot ? .orange : .primary)
+            Text(value).monospacedDigit().foregroundStyle(critical ? WarningPalette.critical : hot ? WarningPalette.warning : .primary)
                 .fontWeight(critical || hot ? .semibold : .regular)
         }
         .font(.callout)

@@ -124,6 +124,24 @@ The `CPU Stats` legends in the registry list these channels: `EACC_ECPU0`…`EAC
 1. **DONE (#51, verification on a live M6 — `--dump` shows GHz > 0 — still pending, needs a human at the machine).** `SoCMetrics.readDVFSTables`: read nodes whose name is `pmgr` **or starts with `pmgr-child`**, keeping the first value found per key so the M4 behavior (tables on `pmgr`) does not change.
 2. `CPULoad.detectKinds`: map `"M"` to `.performance` (M cores run on the P-cluster DVFS table, evidence 2). **Done in #54** as the pure `CPULoad.kinds(entries:count:perflevel:)` with unit tests; a separate `CoreKind` for the middle tier is deferred until data from the M6.
 3. **DONE (#51, live M6 verification pending).** `SoCMetrics.sample`: also sum `MCPUn` residency into the P cluster.
-4. `cpuWatts`: log the live Energy Model channel list on the M6, then accept the real name (probably a sum of per-cluster channels).
+4. `cpuWatts`: **researched in #66, no CPU energy channel exists in the list → `cpuWatts` stays nil on M6.** See the section below.
+
+### M6 `Energy Model` channels from `--dump` (coreglance#66)
+`CoreGlance --dump` (macOS 27.2, `ioreport channel:` lines, metadata only; 7 321 channels in total) lists exactly these channels in group `Energy Model`:
+
+| group | subgroup | name | unit |
+|---|---|---|---|
+| Energy Model | (none) | GPU Energy | nJ |
+| Energy Model | (none) | PCIe Port 0 Energy | uJ |
+| Energy Model | (none) | PCIe Port 2 Energy | uJ |
+| Energy Model | (none) | apciec3 Energy | uJ |
+| Energy Model | (none) | apciec1 Energy | uJ |
+| Energy Model | (none) | apciec0 Energy | uJ |
+
+The only other channels with an energy unit (mJ/uJ/nJ) in the whole list are those six. The CPU channels (`EACC`, `PACC0`, `EACC_ECPU0…5`, `PACC0_PCPU0/1`, `PACC0_MCPU2…5`, in `CPU Stats`) have unit `24Mticks` (residency), not energy; `SoC Stats / PMGR Counters` `*_POWER_ON` have no unit.
+
+**Decision:** there is no channel that carries CPU energy, neither `CPU Energy` nor per-cluster ones (`EACC`/`PACC`/`MCPU` energy). Summing GPU/PCIe channels or deriving watts from residency would be a guess without data, so `SoCMetrics.isCPUEnergyChannel` accepts only `Energy Model` / `CPU Energy` (M1–M4, unchanged) and `cpuWatts` stays nil on M6 (the UI already shows "–"). This ticket therefore closes as research, not as a fix.
+
+**Still missing:** CPU package power on M6 may be exposed by a group that is not in the metadata list above (a channel appears in the list only if registered; the live `Energy Model` sample on a real M6 with working IOReport has not been compared with this list), or only via SMC (`PSTR`/`PCPC`-style keys, not readable in the sandbox) or `systemWatts` minus GPU/DRAM. To verify on a live M6: run `--dump` outside the sandbox and check whether `ioreport: unavailable` is gone and whether any `Energy Model` channel beyond the six appears in the sampled values.
 
 Estimate: about 40–80 changed lines for 1–3, plus tests. Tests need a test target and a way to feed recorded data (`Package.swift` has none, T01, outside this ticket's allowed files), so the fixes are left to follow-up tickets. Fail-soft stays: missing tables keep showing "–".
