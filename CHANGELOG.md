@@ -2,6 +2,8 @@
 
 ## [Nevydáno]
 
+## [0.4.0] – 2026-11-13
+
 ### Změněno
 
 - Rozpoznání kanálu s příkonem CPU je nově samostatná testovaná funkce; chování na čipech M1–M4 se nemění. Na Apple M6 žádný takový kanál v seznamu IOReport není, proto se příkon CPU tam dál nezobrazuje (zjištění je v RESEARCH.md). (#66)
