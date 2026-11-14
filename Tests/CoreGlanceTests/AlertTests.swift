@@ -63,6 +63,35 @@ final class AlertTests: XCTestCase {
         XCTAssertEqual(tr.update(temperatures: [], thermalState: .nominal, now: t0 + 10), [])
     }
 
+    func testFlappingSeriousCriticalSendsEachLevelOnlyOnceWithinCooldown() {
+        var tr = AlertTracker()
+        var all: [AlertEvent] = []
+        for (i, level) in [ThermalLevel.serious, .critical, .serious, .critical].enumerated() {
+            all += tr.update(temperatures: [], thermalState: level, now: t0 + Double(i) * 3)
+        }
+        XCTAssertEqual(all, [.thermalState(.serious), .thermalState(.critical)])
+    }
+
+    func testEscalationFromNominalToCriticalIsSent() {
+        var tr = AlertTracker()
+        XCTAssertEqual(tr.update(temperatures: [], thermalState: .nominal, now: t0), [])
+        XCTAssertEqual(tr.update(temperatures: [], thermalState: .critical, now: t0 + 2), [.thermalState(.critical)])
+    }
+
+    func testEscalationSeriousToCriticalAfterLongTimeIsSent() {
+        var tr = AlertTracker()
+        XCTAssertEqual(tr.update(temperatures: [], thermalState: .serious, now: t0), [.thermalState(.serious)])
+        // 11 minutes later no Critical has been sent yet: the escalation goes out.
+        XCTAssertEqual(tr.update(temperatures: [], thermalState: .critical, now: t0 + 660), [.thermalState(.critical)])
+    }
+
+    func testCriticalRepeatsAfterTenMinutesWhenFlapping() {
+        var tr = AlertTracker()
+        _ = tr.update(temperatures: [], thermalState: .critical, now: t0)
+        _ = tr.update(temperatures: [], thermalState: .serious, now: t0 + 60)
+        XCTAssertEqual(tr.update(temperatures: [], thermalState: .critical, now: t0 + 600), [.thermalState(.critical)])
+    }
+
     func testStartingInCriticalSendsOnce() {
         var tr = AlertTracker()
         XCTAssertEqual(tr.update(temperatures: [], thermalState: .critical, now: t0), [.thermalState(.critical)])
@@ -118,12 +147,51 @@ final class AlertTests: XCTestCase {
         return s
     }
 
-    func testCoordinatorDoesNothingWhenSwitchIsOff() {
+    private func criticalSnapshot() -> Snapshot {
+        var s = hotSnapshot()
+        s.thermalState = .critical
+        return s
+    }
+
+    func testCoordinatorDeliversNothingWhileSwitchIsOff() {
         let fake = FakeNotifier()
         let c = AlertCoordinator(notifier: fake)
-        c.process(hotSnapshot(), prefs: prefs(notify: false), now: t0)
+        let off = prefs(notify: false)
+        // A rising sequence (nominal → serious + hot SSD → critical) must not deliver anything.
+        var nominal = Snapshot()
+        nominal.sampled = true
+        c.process(nominal, prefs: off, now: t0)
+        c.process(hotSnapshot(), prefs: off, now: t0 + 2)
+        c.process(criticalSnapshot(), prefs: off, now: t0 + 4)
         XCTAssertTrue(fake.delivered.isEmpty)
-        XCTAssertEqual(fake.authRequests, 0)
+    }
+
+    func testStateBeforeSwitchOnIsNotAnnouncedButNewRiseIs() {
+        let fake = FakeNotifier()
+        let c = AlertCoordinator(notifier: fake)
+        // The Mac is already hot while the switch is off.
+        c.process(hotSnapshot(), prefs: prefs(notify: false), now: t0)
+        let on = prefs(notify: true)
+        c.process(hotSnapshot(), prefs: on, now: t0 + 60)
+        XCTAssertTrue(fake.delivered.isEmpty)
+        // A new rise after enabling (Serious → Critical) is delivered.
+        c.process(criticalSnapshot(), prefs: on, now: t0 + 120)
+        XCTAssertEqual(fake.delivered.map(\.title), ["Thermal state: Critical"])
+    }
+
+    func testRiseAfterSwitchOffAndOnIsDeliveredDespiteEarlierState() {
+        let fake = FakeNotifier()
+        let c = AlertCoordinator(notifier: fake)
+        let on = prefs(notify: true)
+        c.process(hotSnapshot(), prefs: on, now: t0)
+        XCTAssertEqual(fake.delivered.count, 2)
+        // Switch off; the Mac cools down meanwhile.
+        var nominal = Snapshot()
+        nominal.sampled = true
+        c.process(nominal, prefs: prefs(notify: false), now: t0 + 30)
+        // Switch on again, the Mac heats up again after 11 minutes: delivered.
+        c.process(hotSnapshot(), prefs: on, now: t0 + 700)
+        XCTAssertEqual(fake.delivered.count, 4)
     }
 
     func testCoordinatorDeliversTemperatureAndThermalWhenOn() {
