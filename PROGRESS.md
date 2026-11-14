@@ -1,5 +1,10 @@
 # PROGRESS
 
+## 2026-11-14 — coreglance#101 Přepínač Install updates automatically
+- Co: `Preferences.autoInstall` (default false); čisté `UpdateLogic.shouldInstallNow` a `autoInstallBlocker`; `Updater.tick` po nalezení nové verze zavolá `installAvailable()` jednou, selhaná verze (`failedVersion`) se v relaci nezkouší znovu; `installState` se před relaunch nevrací na `.idle`; restart přes `restartArguments` (smyčka `kill -0` na PID, limit 15 s) místo `sleep 1`; přepínač v Settings → General (disabled s důvodem); README, CHANGELOG. 9 nových testů v `AutoInstallTests`, min-tests = 200.
+- Výsledek: `swift test --disable-sandbox` 200 testů zelených; nové testy na main nekompilují (chybí symboly). Skutečný restart v GUI neověřen.
+- Další krok: QA; ručně: starší release v /Applications, zapnout přepínač, ověřit samoinstalaci a restart.
+
 ## 2026-11-10 — coreglance#1 testovací target a unit testy
 - Co: `testTarget` CoreGlanceTests (14 testů XCTest), extrakce čistých funkcí `SoCMetrics.megahertz`, `CPULoad.busyFraction`, `SMC.decode`, `Threshold.severity(of:)`.
 - Výsledek: `swift test --disable-sandbox` zelené (<1 s testy); mutace prahu Hz/kHz test shodí.

@@ -43,6 +43,11 @@ enum Format {
         return (v < 10 && i > 0 ? String(format: "%.1f", v) : "\(Int(v.rounded()))") + units[i]
     }
 
+    /// Popover "Activity" row: read before write, same separator as the Network row ("↓ x/s  ↑ y/s").
+    static func diskActivity(read: Double, write: Double) -> String {
+        "R \(rate(read))/s  W \(rate(write))/s"
+    }
+
     static func duration(minutes: Int?) -> String? {
         guard let m = minutes else { return nil }
         return String(format: "%d:%02d", m / 60, m % 60)

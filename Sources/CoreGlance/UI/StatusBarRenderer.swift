@@ -81,11 +81,11 @@ enum StatusBarRenderer {
         }
     }
 
-    /// Two-line text of the stacked metrics that are not plain values (disk activity: write above read).
+    /// Two-line text of the stacked metrics that are not plain values (disk activity: read above write, like ↓ before ↑ for network).
     static func stackedText(for metric: Metric, in s: Snapshot) -> (top: String, bottom: String)? {
         guard metric == .diskActivity else { return nil }
-        guard let io = s.diskIO else { return ("W–", "R–") }
-        return ("W" + Format.rate(io.write), "R" + Format.rate(io.read))
+        guard let io = s.diskIO else { return ("R –", "W –") }
+        return ("R " + Format.rate(io.read), "W " + Format.rate(io.write))
     }
 
     private static func parts(for metric: Metric, in s: Snapshot, prefs: Preferences) -> [Part] {

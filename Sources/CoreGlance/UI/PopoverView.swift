@@ -124,7 +124,7 @@ private struct StatsView: View {
             Section(title: "Disk", symbol: "internaldrive") {
                 Row("Free", String(format: "%.0f GB of %.0f GB", s.disk.free / 1e9, s.disk.total / 1e9))
                 Bar(value: 1 - s.disk.free / max(s.disk.total, 1), tint: s.disk.free < 20e9 ? .orange : .accentColor)
-                if let io = s.diskIO { Row("Activity", "R \(Format.rate(io.read))/s  W \(Format.rate(io.write))/s") }
+                if let io = s.diskIO { Row("Activity", Format.diskActivity(read: io.read, write: io.write)) }
             }
             if s.battery.present {
                 Section(title: "Battery", symbol: "battery.75percent") {

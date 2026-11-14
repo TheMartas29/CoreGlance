@@ -88,6 +88,12 @@ struct SettingsView: View {
             }
             Toggle("Launch at login", isOn: Binding(get: { prefs.launchAtLogin }, set: { prefs.launchAtLogin = $0 }))
             Toggle("Check for updates automatically", isOn: $prefs.autoUpdate)
+            let blocker = UpdateLogic.autoInstallBlocker(autoUpdate: prefs.autoUpdate, canReplaceSelf: updater.canReplaceSelf)
+            Toggle("Install updates automatically", isOn: $prefs.autoInstall)
+                .disabled(blocker != nil)
+                .padding(.leading, 18)
+            Text(blocker ?? "Downloads the new version, checks its SHA-256 and restarts the app. A checksum does not protect against a compromised GitHub account.")
+                .font(.caption).foregroundColor(.secondary).padding(.leading, 18)
             HStack(spacing: 6) {
                 Button(exporter.state == .generating ? "Saving…" : "Save diagnostics…") { exporter.start(monitor: monitor) }
                     .disabled(exporter.state.isBusy)
