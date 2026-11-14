@@ -5,6 +5,7 @@ struct SettingsView: View {
     /// Latest readings; only metrics this Mac can deliver are offered.
     let snapshot: Snapshot
     @ObservedObject private var updater = Updater.shared
+    @State private var notificationsDenied = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -47,6 +48,25 @@ struct SettingsView: View {
             Divider()
             Text("Alerts").font(.subheadline.weight(.semibold))
             Toggle("Color temperatures and thermal state at warning / critical levels", isOn: $prefs.colorize)
+            Toggle("Notify when a temperature is critical", isOn: Binding(
+                get: { prefs.notifyOnCritical },
+                set: { on in
+                    prefs.notifyOnCritical = on
+                    notificationsDenied = false
+                    if on {
+                        SystemAlertNotifier.shared.requestAuthorization { granted in
+                            notificationsDenied = !granted
+                        }
+                    }
+                }
+            ))
+            if prefs.notifyOnCritical && notificationsDenied {
+                HStack(spacing: 6) {
+                    Text("Notifications are blocked.").font(.caption).foregroundStyle(.secondary)
+                    Link("Open System Settings", destination: URL(string: "x-apple.systempreferences:com.apple.Notifications-Settings.extension")!)
+                        .font(.caption)
+                }
+            }
             if prefs.colorize {
                 VStack(alignment: .leading, spacing: 8) {
                     ForEach(Metric.allCases.filter { $0.defaultThreshold != nil && $0.isAvailable(in: snapshot) }) { metric in

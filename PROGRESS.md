@@ -125,3 +125,8 @@
 - Co: `PreferencesTests` (9 testů): výchozí hodnoty, round-trip všech @Published polí, pořadí a duplicity v `set`, prahy (výchozí se neukládá, přežije restart, reset), poškozená data (neznámé enumy, práh s ≠2 prvky, neznámá metrika). Vlastní suite, tearDown ji maže. Chyba v Preferences nenalezena, kód beze změny.
 - Výsledek: po merge main `scripts/min-tests.txt` = 114 + 9 = 123 (skutečný počet viz swift test).
 - Další krok: QA.
+
+## 2026-11-14 — coreglance#91 Volitelné systémové notifikace
+- Co: `Alerts.swift` – čistý `AlertTracker` (přechod do critical, cooldown 10 min na metriku, thermal state jen vzestup, start v critical jednou), `AlertMessage`, protokol `AlertNotifier` + `SystemAlertNotifier` (bez bundle ID nic), `AlertCoordinator` (při vypnutém přepínači nic). `Preferences.notifyOnCritical` (default false), přepínač v Settings → Alerts s hintem na System Settings. 15 testů v `AlertTests`, min-tests = 138.
+- Výsledek: `swift build --disable-sandbox` bez varování, `swift test --disable-sandbox` 138 testů zelených; nové testy na main nekompilují.
+- Další krok: QA; skutečné doručení ověřit ručně v .app.

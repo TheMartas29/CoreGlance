@@ -26,13 +26,22 @@ enum StatusBarRenderer {
         prefs.temperatureMode == .hottest ? r?.max : r?.average
     }
 
+    /// The °C value shown (and alerted on) for a temperature metric.
+    static func temperatureValue(for metric: Metric, in s: Snapshot, prefs: Preferences) -> Double? {
+        switch metric {
+        case .cpuTemperature: return temperature(s.thermals.cpu, prefs)
+        case .gpuTemperature: return temperature(s.thermals.gpu, prefs)
+        case .batteryTemperature: return s.batteryTemperature
+        case .ssdTemperature: return s.thermals.ssd
+        default: return nil
+        }
+    }
+
     /// Only temperatures are colored, against the user's or default thresholds (°C).
     static func severity(for metric: Metric, in s: Snapshot, prefs: Preferences) -> Severity {
         switch metric {
-        case .cpuTemperature: return prefs.severity(metric, value: temperature(s.thermals.cpu, prefs))
-        case .gpuTemperature: return prefs.severity(metric, value: temperature(s.thermals.gpu, prefs))
-        case .batteryTemperature: return prefs.severity(metric, value: s.batteryTemperature)
-        case .ssdTemperature: return prefs.severity(metric, value: s.thermals.ssd)
+        case .cpuTemperature, .gpuTemperature, .batteryTemperature, .ssdTemperature:
+            return prefs.severity(metric, value: temperatureValue(for: metric, in: s, prefs: prefs))
         case .thermalState: return s.thermalState.severity  // discrete state: fixed levels, no thresholds
         default: return .normal
         }
