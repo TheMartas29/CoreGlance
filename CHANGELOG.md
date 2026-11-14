@@ -2,6 +2,10 @@
 
 ## [Nevydáno]
 
+### Přidáno
+
+- V Nastavení se u dostupné aktualizace objeví tlačítko „Install and restart“: aplikace stáhne novou verzi z GitHub Releases, ověří kontrolní součet SHA-256, nahradí sama sebe a znovu se spustí. Při chybě se zobrazí krátká zpráva a nainstalovaná verze zůstane beze změny. Kontrolní součet chrání před poškozeným stažením, ne před kompromitovaným účtem na GitHubu. Nové vydání nahrává i soubor `CoreGlance.zip.sha256`. (#88)
+
 ## [0.4.5] – 2026-11-14
 
 ### Změněno

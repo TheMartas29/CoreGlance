@@ -125,3 +125,8 @@
 - Co: `PreferencesTests` (9 testů): výchozí hodnoty, round-trip všech @Published polí, pořadí a duplicity v `set`, prahy (výchozí se neukládá, přežije restart, reset), poškozená data (neznámé enumy, práh s ≠2 prvky, neznámá metrika). Vlastní suite, tearDown ji maže. Chyba v Preferences nenalezena, kód beze změny.
 - Výsledek: po merge main `scripts/min-tests.txt` = 114 + 9 = 123 (skutečný počet viz swift test).
 - Další krok: QA.
+
+## 2026-11-14 — coreglance#88 Install and restart s ověřením SHA-256
+- Co: `ReleaseInfo.checksumURL` (asset `CoreGlance.zip.sha256`, trusted host, uložený v Preferences); čisté `parseChecksum`/`checksumMatches`/`sha256Hex` (CryptoKit); `UpdateInstaller` (protokol `UpdateDownloader`, stažení do dočasné složky, hash, `ditto`, kontrola bundle id + verze == release, `replace` se zálohou a rollbackem); `Updater.installAvailable` + stav; tlačítko v Settings; release job nahrává i `.sha256`; README, CHANGELOG.
+- Výsledek: `swift build --disable-sandbox` bez varování, `swift test --disable-sandbox` 143 testů zelených (20 nových), min-tests.txt = 143. Nové testy na main nekompilují. Skutečný klik v GUI neověřen (menu bar appku nespouštím).
+- Další krok: QA; ruční zkouška na Macu: nainstalovat starší release do /Applications a kliknout Install and restart.

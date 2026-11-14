@@ -1,15 +1,50 @@
+import CryptoKit
 import Foundation
 
 /// A GitHub release that can be installed: tag, the `CoreGlance.zip` asset and the release page.
+/// `checksumURL` is the `CoreGlance.zip.sha256` asset; without it the update is not installed in-app.
 struct ReleaseInfo: Equatable {
     let version: String
     let downloadURL: URL
     let pageURL: URL
+    var checksumURL: URL? = nil
 }
 
 /// Pure update logic: no network, no file system, so it can be tested with plain values.
 enum UpdateLogic {
     static let assetName = "CoreGlance.zip"
+    static let checksumAssetName = "CoreGlance.zip.sha256"
+
+    /// Hash from a `shasum -a 256` line ("<64 hex>  CoreGlance.zip"; the file name is optional but,
+    /// when present, must be `CoreGlance.zip`). Lower-cased; anything malformed is nil.
+    static func parseChecksum(_ text: String) -> String? {
+        guard let line = text.split(whereSeparator: \.isNewline)
+            .map({ $0.trimmingCharacters(in: .whitespaces) }).first(where: { !$0.isEmpty }) else { return nil }
+        let tokens = line.split(whereSeparator: { $0 == " " || $0 == "\t" })
+        guard (1...2).contains(tokens.count) else { return nil }
+        let hash = tokens[0].lowercased()
+        guard hash.count == 64, hash.allSatisfy({ $0.isASCII && $0.isHexDigit }) else { return nil }
+        if tokens.count == 2 {
+            let name = tokens[1].hasPrefix("*") ? String(tokens[1].dropFirst()) : String(tokens[1])
+            guard name == assetName else { return nil }
+        }
+        return hash
+    }
+
+    /// True when the checksum file is well-formed and names exactly this digest.
+    static func checksumMatches(_ checksumText: String, digest: String) -> Bool {
+        guard let expected = parseChecksum(checksumText) else { return false }
+        return expected == digest.lowercased()
+    }
+
+    /// SHA-256 of a file as lower-case hex, read in chunks.
+    static func sha256Hex(of file: URL) throws -> String {
+        let handle = try FileHandle(forReadingFrom: file)
+        defer { try? handle.close() }
+        var hasher = SHA256()
+        while let chunk = try handle.read(upToCount: 1 << 20), !chunk.isEmpty { hasher.update(data: chunk) }
+        return hasher.finalize().map { String(format: "%02x", $0) }.joined()
+    }
     static let checkInterval: TimeInterval = 24 * 3600
 
     /// "v0.3.0" / "0.3" → [0, 3, 0]. Anything else (pre-release suffixes, text) is nil.
@@ -47,10 +82,13 @@ enum UpdateLogic {
         let page = (root["html_url"] as? String).flatMap(URL.init(string:)).flatMap { isTrustedHost($0) ? $0 : nil }
             ?? URL(string: "https://github.com/TheMartas29/CoreGlance/releases/latest")!
         let version = tag.hasPrefix("v") || tag.hasPrefix("V") ? String(tag.dropFirst()) : tag
-        return ReleaseInfo(version: version, downloadURL: download, pageURL: page)
+        let checksum = assets.first(where: { $0["name"] as? String == checksumAssetName })
+            .flatMap { $0["browser_download_url"] as? String }.flatMap(URL.init(string:))
+            .flatMap { isTrustedHost($0) ? $0 : nil }
+        return ReleaseInfo(version: version, downloadURL: download, pageURL: page, checksumURL: checksum)
     }
 
-    private static func isTrustedHost(_ url: URL) -> Bool {
+    static func isTrustedHost(_ url: URL) -> Bool {
         guard url.scheme == "https", let host = url.host?.lowercased() else { return false }
         return host == "github.com" || host.hasSuffix(".github.com") || host.hasSuffix(".githubusercontent.com")
     }
