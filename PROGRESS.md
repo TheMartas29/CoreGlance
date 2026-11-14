@@ -120,3 +120,8 @@
 - Co: Přepočet potvrdil nález: darkCritical (255,69,58) vůči 43/255 = 4,156:1 (<4,5), test `testDarkPaletteMeetsAAOnSnapshotBackground` na původním kódu padal ("4.156245435626784" is less than "4.5"). darkCritical změněn na (255,105,97), darkBackground sjednoceno na 43/255 (jako Snapshotter), testy kontrolují i 30/255 a windowBackgroundColor pod darkAqua. Adaptivní NSColor (`warningNS`/`criticalNS`) otestován pod .aqua/.darkAqua. Komentář v Contrast.swift opraven. Světlý režim beze změny.
 - Výsledek: `swift test --disable-sandbox` 113 testů zelených (4 nové), min-tests.txt = 113.
 - Další krok: QA.
+
+## 2026-11-14 — coreglance#79 Testy persistence Preferences
+- Co: `PreferencesTests` (9 testů): výchozí hodnoty, round-trip všech @Published polí, pořadí a duplicity v `set`, prahy (výchozí se neukládá, přežije restart, reset), poškozená data (neznámé enumy, práh s ≠2 prvky, neznámá metrika). Vlastní suite, tearDown ji maže. Chyba v Preferences nenalezena, kód beze změny.
+- Výsledek: po merge main `scripts/min-tests.txt` = 114 + 9 = 123 (skutečný počet viz swift test).
+- Další krok: QA.
