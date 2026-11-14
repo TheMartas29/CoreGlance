@@ -160,6 +160,8 @@ final class Preferences: ObservableObject {
     @Published var temperatureMode: TemperatureMode { didSet { defaults.set(temperatureMode.rawValue, forKey: "temperatureMode") } }
     @Published var font: BarFont { didSet { defaults.set(font.rawValue, forKey: "font") } }
     @Published var colorize: Bool { didSet { defaults.set(colorize, forKey: "colorize") } }
+    /// System notification when a temperature turns critical or the thermal state is Serious/Critical (default off).
+    @Published var notifyOnCritical: Bool { didSet { defaults.set(notifyOnCritical, forKey: "notifyOnCritical") } }
     /// Draw the 5-minute history graphs in the popover (default on).
     @Published var showHistory: Bool { didSet { defaults.set(showHistory, forKey: "showHistory") } }
     /// User overrides of the default thresholds.
@@ -206,6 +208,7 @@ final class Preferences: ObservableObject {
         temperatureMode = TemperatureMode(rawValue: defaults.string(forKey: "temperatureMode") ?? "") ?? .average
         font = BarFont(rawValue: defaults.string(forKey: "font") ?? "") ?? .system
         colorize = defaults.object(forKey: "colorize") as? Bool ?? true
+        notifyOnCritical = defaults.bool(forKey: "notifyOnCritical")
         showHistory = defaults.object(forKey: "showHistory") as? Bool ?? true
         let plain = defaults.dictionary(forKey: "thresholds") as? [String: [Double]] ?? [:]
         customThresholds = plain.reduce(into: [:]) { result, item in

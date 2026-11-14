@@ -5,6 +5,7 @@ import SwiftUI
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private let monitor = Monitor()
     private let prefs = Preferences.shared
+    private let alerts = AlertCoordinator()
     private var statusItem: NSStatusItem!
     private let popover = NSPopover()
     private var cancellables: Set<AnyCancellable> = []
@@ -21,7 +22,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         popover.behavior = .transient
         popover.animates = false
 
-        monitor.$snapshot.receive(on: RunLoop.main).sink { [weak self] _ in self?.render() }.store(in: &cancellables)
+        monitor.$snapshot.receive(on: RunLoop.main).sink { [weak self] s in
+            guard let self else { return }
+            self.render()
+            self.alerts.process(s, prefs: self.prefs)
+        }.store(in: &cancellables)
         prefs.objectWillChange.receive(on: RunLoop.main).sink { [weak self] in
             // objectWillChange fires before the value is stored; render on the next pass.
             DispatchQueue.main.async { self?.render() }

@@ -126,6 +126,11 @@
 - Výsledek: po merge main `scripts/min-tests.txt` = 114 + 9 = 123 (skutečný počet viz swift test).
 - Další krok: QA.
 
+## 2026-11-14 — coreglance#91 Volitelné systémové notifikace
+- Co: `Alerts.swift` – čistý `AlertTracker` (přechod do critical, cooldown 10 min na metriku, thermal state jen vzestup, start v critical jednou), `AlertMessage`, protokol `AlertNotifier` + `SystemAlertNotifier` (bez bundle ID nic), `AlertCoordinator` (při vypnutém přepínači nic). `Preferences.notifyOnCritical` (default false), přepínač v Settings → Alerts s hintem na System Settings. 15 testů v `AlertTests`, min-tests = 138.
+- Výsledek: `swift build --disable-sandbox` bez varování, `swift test --disable-sandbox` 138 testů zelených; nové testy na main nekompilují.
+- Další krok: QA; skutečné doručení ověřit ručně v .app.
+
 ## 2026-11-14 — coreglance#90 Metrika Disk activity
 - Co: `DiskIOReader` (SystemInfo.swift): čisté `totals(of:)` a `rate(previous:current:dt:)` nad 64bitovými čítači `Bytes (Read/Write)` z IOBlockStorageDriver Statistics, `Snapshot.diskIO` (nil = nedostupné), `Metric.diskActivity` (skupina Disk, vypnutá), stacked W/R v liště, řádek Activity v popoveru, `--dump` řádek `disk io`. Testy v `DiskIOTests` (14), tabulka dostupnosti a počet metrik 21 upraveny.
 - Výsledek: `swift build` bez varování, `swift test --disable-sandbox` 137 testů zelených, min-tests.txt = 137; `--dump` ukáže `disk io: read=1.6M/s write=51K/s`.
