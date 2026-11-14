@@ -36,7 +36,7 @@ enum Snapshotter {
     /// so the settings page is rendered through an off-screen window instead of ImageRenderer.
     static func renderSettings(_ monitor: Monitor, _ prefs: Preferences, into dir: URL) {
         for dark in [false, true] {
-            let root = SettingsView(prefs: prefs, snapshot: monitor.snapshot)
+            let root = SettingsView(prefs: prefs, snapshot: monitor.snapshot, monitor: monitor)
                 .padding(14)
                 .frame(width: 320)
                 .background(dark ? Color(white: 0.17) : Color(white: 0.97))

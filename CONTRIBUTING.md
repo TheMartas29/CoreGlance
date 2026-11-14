@@ -35,7 +35,7 @@ Code layout:
 
 ## Compatibility reports
 
-These are the most valuable contribution. Open a *Compatibility report* issue with your Mac model and the full output of `CoreGlance --dump`. It includes the per-core `cluster-type` lines and the list of IOReport channels, which we need to fix power readings on new chips, so please don't trim it.
+These are the most valuable contribution. Open a *Compatibility report* issue with your Mac model and the full diagnostics: use *Save diagnostics…* in Settings → General and attach the saved file to the issue (or run `CoreGlance --dump > diagnostics.txt` and attach that; it is too big to paste into the issue body). It includes the per-core `cluster-type` lines and the list of IOReport channels, which we need to fix power readings on new chips, so please don't trim it.
 
 ## Pull requests
 
