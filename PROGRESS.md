@@ -103,3 +103,10 @@
 - Co: výpis `--dump` ukázal, že `Energy Model` na M6 má jen GPU a PCIe kanály, žádný CPU → bez hádání zůstává `cpuWatts` nil. Čistá `SoCMetrics.isCPUEnergyChannel`, `joulesIfKnown` (neznámá jednotka = nil, ne 0), `cpuJoules`; `sample()` používá predikát a sčítá. Fixture z výpisu v `CPUEnergyTests`. Výpis kanálů a rozhodnutí v RESEARCH.md.
 - Výsledek: `swift build` bez varování, `swift test --disable-sandbox` 103 testů zelených; nové testy na main nekompilují.
 - Další krok: na živém M6 mimo sandbox ověřit, zda vzorkování nevrací CPU kanál mimo seznam (`--dump` cpuWatts != nil); jinak SMC/jiná cesta jako nový tiket.
+
+## 2026-11-14 — coreglance#78 sample() volá cpuJoules
+- Co: `sample()` sesbírá kanály Energy Model jako n-tice a CPU část počítá `SoCMetrics.cpuJoules` (inline `cpuJ` zmizelo); GPU/ANE/DRAM beze změny. Komentář k nepoužitému `subGroup`. Test: CPU Energy jen s neznámou jednotkou = nil (záměr #66). RESEARCH.md 7 320 kanálů. `scripts/min-tests.txt` = 110.
+- Mutační důkaz: v `cpuJoules` `total = (total ?? 0) + …` → `total = …` shodí `testCPUJoulesSumsMatchingChannelsOnly`: `XCTAssertEqualWithAccuracy failed: ("0.5") is not equal to ("2.5")`. Vráceno zpět.
+- Výsledek: `swift build` bez varování, `swift test --disable-sandbox` 110 testů zelených.
+- Poznámka: nový test neznámé jednotky projde i na main (cpuJoules to tam už umí); tiket ho chtěl jako zápis záměru. Ochranu produkčního sčítání dává napojení sample() + stávající test sčítání.
+- Další krok: QA.

@@ -55,6 +55,14 @@ final class CPUEnergyTests: XCTestCase {
         XCTAssertEqual(SoCMetrics.cpuJoules(channels)!, 2.5, accuracy: 1e-12)
     }
 
+    // Intentional since #66: a CPU Energy channel with an unknown unit gives nil (cpuWatts nil), not 0.
+    func testCPUJoulesIsNilForOnlyUnknownUnitChannel() {
+        let channels: [(group: String, subGroup: String?, name: String, unit: String, value: Int64)] = [
+            ("Energy Model", "", "CPU Energy", "24Mticks", 12345),
+        ]
+        XCTAssertNil(SoCMetrics.cpuJoules(channels))
+    }
+
     func testCPUJoulesIsNilWhenNothingMatches() {
         let channels = m6EnergyModel.map { (group: "Energy Model", subGroup: "" as String?, name: $0.name, unit: $0.unit, value: Int64(1000)) }
         XCTAssertNil(SoCMetrics.cpuJoules(channels))
