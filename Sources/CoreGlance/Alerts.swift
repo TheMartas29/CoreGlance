@@ -1,10 +1,10 @@
 import Foundation
 import UserNotifications
 
-/// What an alert is about: one of the four temperatures or the system thermal state.
+/// What an alert is about: one of the four temperatures or one level (rank) of the system thermal state.
 enum AlertSubject: Hashable {
     case temperature(Metric)
-    case thermalState
+    case thermalState(Int)
 }
 
 /// One temperature reading (°C) together with its severity against the user's thresholds.
@@ -44,24 +44,24 @@ struct AlertTracker {
     }
 
     /// Feed one snapshot. A metric absent from `temperatures` counts as not critical.
-    mutating func update(temperatures: [TemperatureReading], thermalState: ThermalLevel, now: Date) -> [AlertEvent] {
+    /// With `silent` the tracker only follows the current state (used while notifications are off):
+    /// it returns nothing and starts no cooldown, so later rises are judged against the real state.
+    mutating func update(temperatures: [TemperatureReading], thermalState: ThermalLevel, now: Date, silent: Bool = false) -> [AlertEvent] {
         var events: [AlertEvent] = []
         for metric in Metric.allCases where metric.isTemperature {
             let reading = temperatures.first { $0.metric == metric }
             let critical = reading?.severity == .critical
-            if critical, wasCritical[metric] != true, let reading, cooledDown(.temperature(metric), now) {
+            if !silent, critical, wasCritical[metric] != true, let reading, cooledDown(.temperature(metric), now) {
                 events.append(.temperatureCritical(metric, celsius: reading.celsius))
                 lastSent[.temperature(metric)] = now
             }
             wasCritical[metric] = critical
         }
         let rank = Self.rank(thermalState)
-        if rank > thermalRank {
-            // Serious → Critical is an escalation and always goes out; a fresh rise obeys the cooldown.
-            if thermalRank > 0 || cooledDown(.thermalState, now) {
-                events.append(.thermalState(thermalState))
-                lastSent[.thermalState] = now
-            }
+        // Cooldown is kept per level (Serious, Critical), so flapping between them cannot repeat a level.
+        if !silent, rank > thermalRank, cooledDown(.thermalState(rank), now) {
+            events.append(.thermalState(thermalState))
+            lastSent[.thermalState(rank)] = now
         }
         thermalRank = rank
         return events
@@ -118,12 +118,14 @@ final class AlertCoordinator {
     init(notifier: AlertNotifier = SystemAlertNotifier.shared) { self.notifier = notifier }
 
     func process(_ s: Snapshot, prefs: Preferences, now: Date = Date()) {
-        guard prefs.notifyOnCritical, s.sampled else { return }
+        guard s.sampled else { return }
+        let enabled = prefs.notifyOnCritical
         let readings: [TemperatureReading] = Metric.allCases.filter(\.isTemperature).compactMap { metric in
             guard let c = StatusBarRenderer.temperatureValue(for: metric, in: s, prefs: prefs) else { return nil }
             return TemperatureReading(metric: metric, celsius: c, severity: prefs.severity(metric, value: c))
         }
-        for event in tracker.update(temperatures: readings, thermalState: s.thermalState, now: now) {
+        // While the switch is off the tracker still follows the state, but silently.
+        for event in tracker.update(temperatures: readings, thermalState: s.thermalState, now: now, silent: !enabled) {
             let m = AlertMessage.make(event, unit: prefs.unit)
             notifier.deliver(title: m.title, body: m.body)
         }

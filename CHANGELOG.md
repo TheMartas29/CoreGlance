@@ -2,6 +2,10 @@
 
 ## [Nevydáno]
 
+### Opraveno
+
+- Notifikace o kritické teplotě a thermal state se při kmitání mezi Serious a Critical už neopakují dřív než po 10 minutách (pro každou úroveň zvlášť). Po vypnutí a opětovném zapnutí přepínače se nepošle upozornění na stav, který trval už před zapnutím, a nový vzestup se oznámí. (#102)
+
 ## [0.9.0] – 2026-11-14
 
 ### Přidáno
