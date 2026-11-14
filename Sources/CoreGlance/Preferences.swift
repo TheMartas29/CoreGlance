@@ -179,12 +179,14 @@ final class Preferences: ObservableObject {
             guard let v = defaults.string(forKey: "knownReleaseVersion"),
                   let d = defaults.string(forKey: "knownReleaseDownload").flatMap(URL.init(string:)),
                   let p = defaults.string(forKey: "knownReleasePage").flatMap(URL.init(string:)) else { return nil }
-            return ReleaseInfo(version: v, downloadURL: d, pageURL: p)
+            return ReleaseInfo(version: v, downloadURL: d, pageURL: p,
+                               checksumURL: defaults.string(forKey: "knownReleaseChecksum").flatMap(URL.init(string:)))
         }
         set {
             defaults.set(newValue?.version, forKey: "knownReleaseVersion")
             defaults.set(newValue?.downloadURL.absoluteString, forKey: "knownReleaseDownload")
             defaults.set(newValue?.pageURL.absoluteString, forKey: "knownReleasePage")
+            defaults.set(newValue?.checksumURL?.absoluteString, forKey: "knownReleaseChecksum")
         }
     }
 

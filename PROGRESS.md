@@ -130,3 +130,8 @@
 - Co: `History` (okno 300 s, kapacita 600, nil/nekonečno se nezapíše), `Histories.record(Snapshot)`, čistý `Sparkline` (body 0…1, pevná stupnice 0–1 pro využití, `autoRange` s minimem 10 °C). Monitor přidává do historie v main bloku spolu se snapshotem. Popover: sparkline v CPU, GPU (jen s GPU), Memory a u teploty CPU (jen s čidlem), od 2 vzorků; přepínač `showHistory` (klíč "showHistory", default zapnuto) v Settings → Appearance.
 - Výsledek: `swift build` bez varování, `swift test --disable-sandbox` 142 testů zelených (19 nových), min-tests.txt = 142. Nové testy na main nekompilují (typy neexistují).
 - Další krok: QA; vzhled grafu nebyl vidět (bez GUI session), ověřit `--snapshot` mimo sandbox.
+
+## 2026-11-14 — coreglance#88 Install and restart s ověřením SHA-256
+- Co: `ReleaseInfo.checksumURL` (asset `CoreGlance.zip.sha256`, trusted host, uložený v Preferences); čisté `parseChecksum`/`checksumMatches`/`sha256Hex` (CryptoKit); `UpdateInstaller` (protokol `UpdateDownloader`, stažení do dočasné složky, hash, `ditto`, kontrola bundle id + verze == release, `replace` se zálohou a rollbackem); `Updater.installAvailable` + stav; tlačítko v Settings; release job nahrává i `.sha256`; README, CHANGELOG.
+- Výsledek: `swift build --disable-sandbox` bez varování, `swift test --disable-sandbox` 143 testů zelených (20 nových), min-tests.txt = 143. Nové testy na main nekompilují. Skutečný klik v GUI neověřen (menu bar appku nespouštím).
+- Další krok: QA; ruční zkouška na Macu: nainstalovat starší release do /Applications a kliknout Install and restart.
