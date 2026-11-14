@@ -16,6 +16,8 @@ struct Snapshot {
     var disk = DiskStats()
     /// nil when no storage controller was found (metric unavailable).
     var diskIO: DiskIOStats?
+    /// Busiest processes by CPU. Names are local-only: never print this into `--dump` or diagnostics.
+    var topProcesses: [ProcessUsage] = []
     var thermalState: ThermalLevel = .unknown
     /// False until the first real reading; until then every metric counts as available.
     var sampled = false
@@ -66,13 +68,25 @@ final class Monitor: ObservableObject {
     private var thermals: Thermals?
     private let network = NetworkReader()
     private let diskIO = DiskIOReader()
+    private let processes: ProcessReader
     private let chipName = Sysctl.string("machdep.cpu.brand_string") ?? "Unknown CPU"
+    private let topProcessesLock = NSLock()
+    private var topProcessesOn = true
 
     var chip: String { chipName }
 
-    /// `thermalSource` is injectable so tests can feed every thermal state without heating the Mac.
-    init(thermalSource: @escaping () -> ProcessInfo.ThermalState = { ProcessInfo.processInfo.thermalState }) {
+    /// Switch the process sampling (Settings → Show top processes); safe from any thread.
+    var showTopProcesses: Bool {
+        get { topProcessesLock.withLock { topProcessesOn } }
+        set { topProcessesLock.withLock { topProcessesOn = newValue } }
+    }
+
+    /// `thermalSource` is injectable so tests can feed every thermal state without heating the Mac;
+    /// `processes` so they can feed fixture processes.
+    init(thermalSource: @escaping () -> ProcessInfo.ThermalState = { ProcessInfo.processInfo.thermalState },
+         processes: ProcessReader = ProcessReader()) {
         self.thermalSource = thermalSource
+        self.processes = processes
         queue.setSpecific(key: Monitor.queueKey, value: true)
         queue.async { [self] in
             cpuLoad = CPULoad()
@@ -130,6 +144,11 @@ final class Monitor: ObservableObject {
         s.network = network.sample()
         s.disk = DiskReader.read()
         s.diskIO = diskIO.sample()
+        if showTopProcesses {
+            s.topProcesses = processes.sample()
+        } else {
+            processes.reset()
+        }
         s.thermalState = ThermalLevel(thermalSource())
         return s
     }

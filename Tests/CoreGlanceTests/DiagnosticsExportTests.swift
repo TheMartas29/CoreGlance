@@ -77,11 +77,126 @@ final class DiagnosticsExportTests: XCTestCase {
         let ro = dir.appendingPathComponent("ro")
         try FileManager.default.createDirectory(at: ro, withIntermediateDirectories: false, attributes: [.posixPermissions: 0o555])
         defer { try? FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: ro.path) }
-        if FileManager.default.isWritableFile(atPath: ro.path) { return }  // spuštěno jako root: oprávnění se neuplatní
-        XCTAssertThrowsError(try DiagnosticsExport.write("x", to: ro.appendingPathComponent("out.txt"))) { error in
+        let target = ro.appendingPathComponent("out.txt")
+        if FileManager.default.isWritableFile(atPath: ro.path) {
+            // Spuštěno jako root: oprávnění se neuplatní, zápis tedy musí projít (explicitní assert, ne tiché přeskočení).
+            XCTAssertEqual(geteuid(), 0, "složka 0o555 je zapisovatelná i pro neprivilegovaného uživatele")
+            try DiagnosticsExport.write("x", to: target)
+            XCTAssertEqual(try String(contentsOf: target, encoding: .utf8), "x")
+            return
+        }
+        XCTAssertThrowsError(try DiagnosticsExport.write("x", to: target)) { error in
             XCTAssertTrue(error is DiagnosticsExportError)
         }
         XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: ro.path), [])
+    }
+
+    /// Nezapisovatelná cesta bez ohledu na root: rodič je obyčejný soubor (ENOTDIR).
+    func testWriteWithFileAsParentThrowsReadableErrorEvenAsRoot() throws {
+        let parent = dir.appendingPathComponent("soubor.txt")
+        try Data("x".utf8).write(to: parent)
+        XCTAssertThrowsError(try DiagnosticsExport.write("y", to: parent.appendingPathComponent("out.txt"))) { error in
+            XCTAssertTrue(error is DiagnosticsExportError)
+            XCTAssertTrue(error.localizedDescription.hasPrefix("Couldn't save the diagnostics: "))
+        }
+        XCTAssertEqual(try String(contentsOf: parent, encoding: .utf8), "x")
+    }
+
+    // MARK: Přechody stavu (čistá logika)
+
+    func testTransitionsHappyPathToSaved() {
+        var s = DiagnosticsExportState.idle
+        s = s.next(.panelOpened); XCTAssertEqual(s, .choosingFile)
+        s = s.next(.fileChosen); XCTAssertEqual(s, .generating)
+        s = s.next(.finished(.success("a.txt"))); XCTAssertEqual(s, .saved(fileName: "a.txt"))
+        XCTAssertEqual(s.next(.timeout), .idle)
+    }
+
+    func testTransitionsFailureAndCancel() {
+        let err = DiagnosticsExportError(reason: "Disk full")
+        let failed = DiagnosticsExportState.generating.next(.finished(.failure(err)))
+        XCTAssertEqual(failed, .failed(message: "Couldn't save the diagnostics: Disk full"))
+        XCTAssertEqual(failed.next(.timeout), .idle)
+        XCTAssertEqual(DiagnosticsExportState.choosingFile.next(.panelCancelled), .idle)
+    }
+
+    func testTransitionsIgnoreEventsThatMakeNoSense() {
+        XCTAssertEqual(DiagnosticsExportState.generating.next(.panelOpened), .generating)  // busy
+        XCTAssertEqual(DiagnosticsExportState.choosingFile.next(.timeout), .choosingFile)  // zpožděný reset
+        XCTAssertEqual(DiagnosticsExportState.idle.next(.finished(.success("a.txt"))), .idle)
+        XCTAssertEqual(DiagnosticsExportState.saved(fileName: "a.txt").next(.panelOpened), .choosingFile)
+    }
+
+    // MARK: Exporter: okno s výsledkem a návrat do .idle
+
+    @MainActor
+    private final class MockPresenter: DiagnosticsResultPresenting {
+        var calls: [(title: String, text: String, isFailure: Bool)] = []
+        func present(title: String, text: String, isFailure: Bool) { calls.append((title, text, isFailure)) }
+    }
+
+    @MainActor
+    private func makeExporter() -> (DiagnosticsExporter, MockPresenter, () -> [(TimeInterval, @MainActor () -> Void)]) {
+        let presenter = MockPresenter()
+        var pending: [(TimeInterval, @MainActor () -> Void)] = []
+        let exporter = DiagnosticsExporter(presenter: presenter, schedule: { delay, work in pending.append((delay, work)) })
+        return (exporter, presenter, { pending })
+    }
+
+    @MainActor
+    func testSuccessPresentsAlertWithFileName() {
+        let (exporter, presenter, _) = makeExporter()
+        exporter.apply(.panelOpened); exporter.apply(.fileChosen)
+        XCTAssertTrue(presenter.calls.isEmpty, "okno až po dokončení zápisu")
+        exporter.apply(.finished(.success("CoreGlance-diagnostics-Mac16-1-2026-11-14.txt")))
+        XCTAssertEqual(presenter.calls.count, 1)
+        XCTAssertEqual(presenter.calls.first?.text, "CoreGlance-diagnostics-Mac16-1-2026-11-14.txt")
+        XCTAssertEqual(presenter.calls.first?.isFailure, false)
+    }
+
+    @MainActor
+    func testFailurePresentsAlertWithReadableReason() {
+        let (exporter, presenter, _) = makeExporter()
+        exporter.apply(.panelOpened); exporter.apply(.fileChosen)
+        exporter.apply(.finished(.failure(DiagnosticsExportError(reason: "The folder is read-only"))))
+        XCTAssertEqual(presenter.calls.count, 1)
+        XCTAssertEqual(presenter.calls.first?.text, "Couldn't save the diagnostics: The folder is read-only")
+        XCTAssertEqual(presenter.calls.first?.isFailure, true)
+        XCTAssertFalse(presenter.calls.first?.text.isEmpty ?? true)
+    }
+
+    @MainActor
+    func testCancelPresentsNothingAndSchedulesNothing() {
+        let (exporter, presenter, pending) = makeExporter()
+        exporter.apply(.panelOpened); exporter.apply(.panelCancelled)
+        XCTAssertEqual(exporter.state, .idle)
+        XCTAssertTrue(presenter.calls.isEmpty)
+        XCTAssertTrue(pending().isEmpty)
+    }
+
+    @MainActor
+    func testResultReturnsToIdleAfterTenSeconds() throws {
+        let (exporter, _, pending) = makeExporter()
+        exporter.apply(.panelOpened); exporter.apply(.fileChosen)
+        exporter.apply(.finished(.success("a.txt")))
+        XCTAssertEqual(exporter.state.message, "Saved a.txt")
+        let timer = try XCTUnwrap(pending().first)
+        XCTAssertEqual(timer.0, 10)
+        timer.1()
+        XCTAssertEqual(exporter.state, .idle)
+        XCTAssertNil(exporter.state.message)
+    }
+
+    @MainActor
+    func testStaleTimerDoesNotClearNewerResult() throws {
+        let (exporter, _, pending) = makeExporter()
+        exporter.apply(.panelOpened); exporter.apply(.fileChosen); exporter.apply(.finished(.success("a.txt")))
+        exporter.apply(.panelOpened); exporter.apply(.fileChosen); exporter.apply(.finished(.success("b.txt")))
+        XCTAssertEqual(pending().count, 2)
+        pending()[0].1()  // starý časovač z prvního ukládání
+        XCTAssertEqual(exporter.state, .saved(fileName: "b.txt"))
+        pending()[1].1()
+        XCTAssertEqual(exporter.state, .idle)
     }
 
     // MARK: Stav tlačítka

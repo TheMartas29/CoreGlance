@@ -6,6 +6,18 @@
 
 - V popoveru je pod řádkem Network graf posledních pěti minut stahování a nahrávání a pod řádkem Activity (Disk) graf čtení a zápisu disku, takže jsou vidět i špičky, které jste mezitím minuli. Dvojice grafů má společnou stupnici od nuly, aby šly porovnat, a drobný šum se nezobrazí jako špička. Grafy se řídí volbou Show history graphs a historie zůstává jen v paměti. (#116)
 
+## [0.11.0] – 2026-11-14
+
+### Přidáno
+
+- Popover má novou sekci „Top processes“: pět procesů s nejvyšším aktuálním využitím CPU (100 % = jedno plné jádro, stejně jako v Monitoru aktivity), takže hned vidíte, co ohřívá nebo zpomaluje Mac. Čte se bez práv správce a názvy procesů zůstávají jen v popoveru, nikdy se nedostanou do `--dump` ani do Save diagnostics. V Nastavení → Appearance je přepínač „Show top processes“ (výchozí zapnuto); po vypnutí se procesy vůbec nevzorkují. (#115)
+
+## [0.10.1] – 2026-11-14
+
+### Opraveno
+
+- Save diagnostics…: po uložení (nebo po chybě zápisu) se teď vždy zobrazí okno s názvem souboru, resp. důvodem chyby, i když se popover při otevření dialogu zavřel. Zpráva v Nastavení po 10 sekundách sama zmizí. (#114)
+
 ## [0.10.0] – 2026-11-14
 
 ### Přidáno

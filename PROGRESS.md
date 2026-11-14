@@ -160,3 +160,8 @@
 - Co: `Histories` + networkDown/Up, diskRead/Write (nil diskIO nic nezapíše); `Sparkline.rateRange` (od 0, minimum 100 kB/s, společné maximum dvojice), `showsRateGraph`; `GraphPalette` (kontrast ≥ 3:1 světle i tmavě); grafy pod řádky Network a Activity. 8 testů v `RateHistoryTests`, min-tests = 228.
 - Výsledek: `swift build` bez varování, `swift test --disable-sandbox` 228 zelených; nové testy na main nekompilují.
 - Další krok: QA; vzhled ověřit `--snapshot` mimo sandbox.
+
+## 2026-11-15 — coreglance#115 Popover: Top processes
+- Co: `Sensors/ProcessReader.swift` – čisté `usages`/`top`/`rows`/`nanoseconds`, `ProcessReader` s injektovatelným zdrojem a hodinami, `liveSource` přes libproc (bez rootu). `Snapshot.topProcesses`, `Monitor(processes:)` + `showTopProcesses` (vypnuto = reader se nevolá), `Preferences.showTopProcesses` (výchozí zapnuto), sekce v popoveru, přepínač v Settings → Appearance. Názvy procesů nejsou v `diagnostics()`.
+- Výsledek: `swift build --disable-sandbox` OK, `swift test --disable-sandbox` 241 testů zelených (21 nových v `ProcessReaderTests`), min-tests.txt = 241. Nové testy na main nekompilují (typy neexistují). GUI nespuštěno.
+- Další krok: QA; navazující řez = žebříček podle paměti.

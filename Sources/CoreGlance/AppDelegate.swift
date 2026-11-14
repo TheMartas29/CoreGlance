@@ -31,6 +31,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // objectWillChange fires before the value is stored; render on the next pass.
             DispatchQueue.main.async { self?.render() }
         }.store(in: &cancellables)
+        prefs.$showTopProcesses.sink { [weak self] in self?.monitor.showTopProcesses = $0 }.store(in: &cancellables)
         prefs.$interval.removeDuplicates().sink { [weak self] in self?.monitor.start(interval: $0) }.store(in: &cancellables)
         // Colored values are not template-tinted, so redraw when the menu bar flips light/dark.
         // effectiveAppearance also fires every time the button's image is replaced, so only

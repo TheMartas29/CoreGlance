@@ -49,6 +49,7 @@ Most menu bar monitors either pull in a pile of frameworks, need a privileged he
 - **Memory:** used (GB or %), app / wired / **compressed**, **swap**, memory pressure. These show how far you are overflowing physical RAM.
 - **History graphs:** a small 5-minute graph under CPU, GPU, memory, CPU temperature, network (download/upload) and disk activity (read/write) in the popover (kept in memory only, can be turned off in Settings).
 - **Disk:** free space on the boot volume, plus live read and write speed (Disk activity, off by default).
+- **Top processes:** the 5 processes using the most CPU right now (100 % = one full core, like Activity Monitor), read via libproc without root. Names stay in the popover only and are never part of `--dump` or Save diagnostics. Can be turned off in Settings → Appearance (then nothing is sampled).
 - **Temperatures:** CPU, GPU, **battery**, SSD. You can show the average or the hottest sensor.
 - **Battery:** charge, charging state, time remaining, health, cycle count, charge/discharge power.
 - **Power:** whole-system watts, CPU, GPU, Neural Engine and DRAM power.
@@ -148,6 +149,7 @@ Every value comes from an interface a normal user process may read:
 | Battery | `AppleSmartBattery` (IORegistry) |
 | Disk | `volumeAvailableCapacityForImportantUsage` (same as Finder) |
 | Disk activity | `IOBlockStorageDriver` → `Statistics` (`Bytes (Read)` / `Bytes (Write)`) |
+| Top processes | `libproc`: `proc_listpids`, `proc_pidinfo(PROC_PIDTASKINFO)`, `proc_name` |
 
 The private `libIOReport` is loaded with `dlopen`, so a missing symbol degrades gracefully instead of crashing. [RESEARCH.md](RESEARCH.md) has the details: units, M4 quirks, sensor naming and what was verified.
 

@@ -131,6 +131,12 @@ private struct StatsView: View {
                     SparklineView(history: histories.diskWrite, range: range, tint: GraphPalette.secondary, label: "Disk write speed, last 5 minutes")
                 }
             }
+            let processRows = prefs.showTopProcesses ? ProcessReader.rows(s.topProcesses) : []
+            if !processRows.isEmpty {
+                Section(title: "Top processes", symbol: "list.number") {
+                    ForEach(Array(processRows.enumerated()), id: \.offset) { _, r in Row(r.name, r.value) }
+                }
+            }
             if s.battery.present {
                 Section(title: "Battery", symbol: "battery.75percent") {
                     Row("Charge", Format.percent(s.battery.percent) + " · " + batteryState)
