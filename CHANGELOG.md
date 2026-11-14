@@ -2,6 +2,8 @@
 
 ## [Nevydáno]
 
+## [0.8.0] – 2026-11-14
+
 ### Přidáno
 
 - Volitelné systémové notifikace: v Nastavení → Alerts jde zapnout upozornění, když teplota CPU, GPU, baterie nebo SSD dosáhne kritické úrovně nebo macOS hlásí thermal state Serious či Critical. Funkce je ve výchozím stavu vypnutá, o oprávnění se macOS zeptá až při zapnutí; stejná notifikace se opakuje nejdřív po 10 minutách. (#91)
