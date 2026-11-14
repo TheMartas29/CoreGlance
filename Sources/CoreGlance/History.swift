@@ -35,13 +35,22 @@ struct Histories: Equatable {
     var gpu = History()
     var memory = History()
     var cpuTemperature = History()
+    /// Throughput in bytes per second.
+    var networkDown = History()
+    var networkUp = History()
+    var diskRead = History()
+    var diskWrite = History()
 
-    /// Adds the readings of one snapshot. Usage values are fractions 0...1, temperature is °C.
+    /// Adds the readings of one snapshot. Usage values are fractions 0...1, temperature is °C, rates are bytes/s.
     mutating func record(_ s: Snapshot, at time: TimeInterval) {
         cpu.append(s.cpu, at: time)
         gpu.append(s.gpu, at: time)
         memory.append(s.memory.total > 0 ? s.memory.used / s.memory.total : nil, at: time)
         cpuTemperature.append(s.thermals.cpu?.average, at: time)
+        networkDown.append(s.network.down, at: time)
+        networkUp.append(s.network.up, at: time)
+        diskRead.append(s.diskIO?.read, at: time)
+        diskWrite.append(s.diskIO?.write, at: time)
     }
 }
 
@@ -51,6 +60,19 @@ enum Sparkline {
     static let percentRange: ClosedRange<Double> = 0...1
     /// Smallest temperature span, so sensor noise of 0.5 °C does not look like a jump.
     static let minimumTemperatureSpan = 10.0
+
+    /// Smallest throughput scale (100 kB/s), so background chatter does not look like a spike.
+    static let minimumRateSpan = 100_000.0
+
+    /// Throughput scale: always from 0, up to the highest value of both series (so a pair such as
+    /// download/upload is drawn on one scale), never narrower than `minimumRateSpan`.
+    static func rateRange(_ values: [Double], _ other: [Double] = []) -> ClosedRange<Double> {
+        let peak = (values + other).filter { $0.isFinite }.max() ?? 0
+        return 0...max(peak, minimumRateSpan)
+    }
+
+    /// Throughput graphs need `showHistory` on and, for disk, an available reading.
+    static func showsRateGraph(showHistory: Bool, available: Bool) -> Bool { showHistory && available }
 
     /// Scale fitted to the data, never narrower than `minSpan`; the data stay centred.
     static func autoRange(_ values: [Double], minSpan: Double = minimumTemperatureSpan) -> ClosedRange<Double> {

@@ -125,6 +125,11 @@ private struct StatsView: View {
                 Row("Free", String(format: "%.0f GB of %.0f GB", s.disk.free / 1e9, s.disk.total / 1e9))
                 Bar(value: 1 - s.disk.free / max(s.disk.total, 1), tint: s.disk.free < 20e9 ? .orange : .accentColor)
                 if let io = s.diskIO { Row("Activity", Format.diskActivity(read: io.read, write: io.write)) }
+                if Sparkline.showsRateGraph(showHistory: prefs.showHistory, available: s.diskIO != nil) {
+                    let range = Sparkline.rateRange(histories.diskRead.values, histories.diskWrite.values)
+                    SparklineView(history: histories.diskRead, range: range, tint: GraphPalette.primary, label: "Disk read speed, last 5 minutes")
+                    SparklineView(history: histories.diskWrite, range: range, tint: GraphPalette.secondary, label: "Disk write speed, last 5 minutes")
+                }
             }
             let processRows = prefs.showTopProcesses ? ProcessReader.rows(s.topProcesses) : []
             if !processRows.isEmpty {
@@ -150,6 +155,11 @@ private struct StatsView: View {
                 }
                 Row("Thermal state", s.thermalState.fullName).emphasized(severity: s.thermalState.severity)
                 Row("Network", "↓ \(Format.rate(s.network.down))/s  ↑ \(Format.rate(s.network.up))/s")
+                if Sparkline.showsRateGraph(showHistory: prefs.showHistory, available: true) {
+                    let range = Sparkline.rateRange(histories.networkDown.values, histories.networkUp.values)
+                    SparklineView(history: histories.networkDown, range: range, tint: GraphPalette.primary, label: "Download speed, last 5 minutes")
+                    SparklineView(history: histories.networkUp, range: range, tint: GraphPalette.secondary, label: "Upload speed, last 5 minutes")
+                }
             }
         }
     }

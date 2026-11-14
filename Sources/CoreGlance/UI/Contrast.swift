@@ -25,6 +25,25 @@ func contrastRatio(_ a: RGB, _ b: RGB) -> Double {
     return (max(la, lb) + 0.05) / (min(la, lb) + 0.05)
 }
 
+/// Barvy čar grafů propustnosti (download/read modrá, upload/write oranžová); grafický prvek ≥ 3:1
+/// vůči pozadí popoveru (WarningPalette.lightBackground / darkBackground).
+enum GraphPalette {
+    static let lightPrimary = RGB(r: 0, g: 90, b: 190)
+    static let lightSecondary = RGB(r: 176, g: 84, b: 0)
+    static let darkPrimary = RGB(r: 100, g: 170, b: 255)
+    static let darkSecondary = RGB(r: 255, g: 159, b: 10)
+
+    static let primary = Color(nsColor: adaptive(light: lightPrimary, dark: darkPrimary))
+    static let secondary = Color(nsColor: adaptive(light: lightSecondary, dark: darkSecondary))
+
+    private static func adaptive(light: RGB, dark: RGB) -> NSColor {
+        NSColor(name: nil) { appearance in
+            let c = appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? dark : light
+            return NSColor(srgbRed: c.r / 255, green: c.g / 255, blue: c.b / 255, alpha: 1)
+        }
+    }
+}
+
 /// Barvy hodnot ve stavu warning/critical v popoveru. Systémové `.orange`/`.red` mají na světlém pozadí
 /// kontrast jen ~2,0:1 a ~3,3:1 (pod WCAG 4,5:1), proto má světlý režim tmavší odstíny.
 /// Tmavý warning je systemOrange (dark); tmavý critical je světlejší
