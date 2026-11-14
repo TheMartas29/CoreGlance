@@ -2,6 +2,8 @@
 
 ## [Nevydáno]
 
+## [0.9.0] – 2026-11-14
+
 ### Přidáno
 
 - V Nastavení → General je nový přepínač „Install updates automatically“. Po zapnutí se aplikace po nalezení novější verze sama stáhne, ověří kontrolní součet SHA-256, nahradí se a znovu spustí (menu bar na chvíli zmizí). Je ve výchozím stavu vypnutý, nelze ho zapnout při vypnuté kontrole aktualizací ani když je aplikace mimo zapisovatelnou složku. Při selhání se stejná verze v téže relaci znovu nezkouší a v Nastavení zůstane chybová hláška. Kontrolní součet nechrání před kompromitovaným účtem na GitHubu. (#101)
