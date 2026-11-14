@@ -30,6 +30,59 @@ final class ContrastTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(contrastRatio(WarningPalette.lightCritical, gray), 4.5)
     }
 
+    // Pozadí popoveru, které kreslí Snapshotter: Color(white: 0.17) ≈ 43/255 (0,17 × 255 = 43,35).
+    // Ruční výpočet WCAG pro původní darkCritical (255,69,58): ≈ 4,15:1 (<4,5).
+    func testDarkPaletteMeetsAAOnSnapshotBackground() {
+        let snapshot = RGB(r: 43, g: 43, b: 43)
+        XCTAssertGreaterThanOrEqual(contrastRatio(WarningPalette.darkWarning, snapshot), 4.5)
+        XCTAssertGreaterThanOrEqual(contrastRatio(WarningPalette.darkCritical, snapshot), 4.5)
+    }
+
+    // Oba krajní případy tmavého pozadí: 30/255 (odhad windowBackground) i 43/255 (Snapshotter).
+    func testDarkPaletteMeetsAAOnBothBackgroundExtremes() {
+        for v in [30.0, 43.0] {
+            let bg = RGB(r: v, g: v, b: v)
+            XCTAssertGreaterThanOrEqual(contrastRatio(WarningPalette.darkWarning, bg), 4.5, "warning na \(v)")
+            XCTAssertGreaterThanOrEqual(contrastRatio(WarningPalette.darkCritical, bg), 4.5, "critical na \(v)")
+        }
+    }
+
+    // Skutečné windowBackgroundColor pod darkAqua musí být v rozmezí testovaných pozadí (≤ 43/255 + tolerance).
+    func testDarkWindowBackgroundIsCovered() throws {
+        var rgb: (Double, Double, Double)?
+        NSAppearance(named: .darkAqua)!.performAsCurrentDrawingAppearance {
+            if let c = NSColor.windowBackgroundColor.usingColorSpace(.sRGB) {
+                rgb = (c.redComponent * 255, c.greenComponent * 255, c.blueComponent * 255)
+            }
+        }
+        let v = try XCTUnwrap(rgb)
+        let bg = RGB(r: v.0, g: v.1, b: v.2)
+        XCTAssertGreaterThanOrEqual(contrastRatio(WarningPalette.darkWarning, bg), 4.5)
+        XCTAssertGreaterThanOrEqual(contrastRatio(WarningPalette.darkCritical, bg), 4.5)
+    }
+
+    private func resolved(_ color: NSColor, _ name: NSAppearance.Name) -> (Double, Double, Double) {
+        var out = (0.0, 0.0, 0.0)
+        NSAppearance(named: name)!.performAsCurrentDrawingAppearance {
+            let c = color.usingColorSpace(.sRGB)!
+            out = (c.redComponent * 255, c.greenComponent * 255, c.blueComponent * 255)
+        }
+        return out
+    }
+
+    private func assertMatches(_ got: (Double, Double, Double), _ want: RGB, _ msg: String) {
+        XCTAssertEqual(got.0, want.r, accuracy: 1, msg)
+        XCTAssertEqual(got.1, want.g, accuracy: 1, msg)
+        XCTAssertEqual(got.2, want.b, accuracy: 1, msg)
+    }
+
+    func testAdaptiveColorsFollowAppearance() {
+        assertMatches(resolved(WarningPalette.warningNS, .aqua), WarningPalette.lightWarning, "warning aqua")
+        assertMatches(resolved(WarningPalette.warningNS, .darkAqua), WarningPalette.darkWarning, "warning darkAqua")
+        assertMatches(resolved(WarningPalette.criticalNS, .aqua), WarningPalette.lightCritical, "critical aqua")
+        assertMatches(resolved(WarningPalette.criticalNS, .darkAqua), WarningPalette.darkCritical, "critical darkAqua")
+    }
+
     func testDarkPaletteMeetsAAOnDark() {
         XCTAssertGreaterThanOrEqual(contrastRatio(WarningPalette.darkWarning, WarningPalette.darkBackground), 4.5)
         XCTAssertGreaterThanOrEqual(contrastRatio(WarningPalette.darkCritical, WarningPalette.darkBackground), 4.5)
