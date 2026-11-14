@@ -1,0 +1,55 @@
+Test Suite 'BatteryParseTests' started at 2026-11-14 06:13:34.427.
+Test Suite 'BatteryParseTests' passed at 2026-11-14 06:13:34.428.
+	 Executed 11 tests, with 0 failures (0 unexpected) in 0.001 (0.002) seconds
+Test Suite 'CPUEnergyTests' started at 2026-11-14 06:13:34.428.
+Test Suite 'CPUEnergyTests' passed at 2026-11-14 06:13:34.429.
+	 Executed 7 tests, with 0 failures (0 unexpected) in 0.001 (0.001) seconds
+Test Suite 'ContrastTests' started at 2026-11-14 06:13:34.429.
+Test Suite 'ContrastTests' passed at 2026-11-14 06:13:34.430.
+	 Executed 6 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+Test Suite 'CoreKindsTests' started at 2026-11-14 06:13:34.430.
+Test Suite 'CoreKindsTests' passed at 2026-11-14 06:13:34.430.
+	 Executed 7 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+Test Suite 'DVFSTests' started at 2026-11-14 06:13:34.430.
+Test Suite 'DVFSTests' passed at 2026-11-14 06:13:34.431.
+	 Executed 4 tests, with 0 failures (0 unexpected) in 0.000 (0.000) seconds
+Test Suite 'DumpFormatTests' started at 2026-11-14 06:13:34.431.
+Test Suite 'DumpFormatTests' passed at 2026-11-14 06:13:34.431.
+	 Executed 4 tests, with 0 failures (0 unexpected) in 0.000 (0.000) seconds
+Test Suite 'FormatTests' started at 2026-11-14 06:13:34.431.
+Test Suite 'FormatTests' passed at 2026-11-14 06:13:34.432.
+	 Executed 7 tests, with 0 failures (0 unexpected) in 0.001 (0.001) seconds
+Test Suite 'MemoryStatsTests' started at 2026-11-14 06:13:34.432.
+Test Suite 'MemoryStatsTests' passed at 2026-11-14 06:13:34.432.
+	 Executed 2 tests, with 0 failures (0 unexpected) in 0.000 (0.000) seconds
+Test Suite 'MetricValueTests' started at 2026-11-14 06:13:34.432.
+Test Suite 'MetricValueTests' passed at 2026-11-14 06:13:34.436.
+	 Executed 14 tests, with 0 failures (0 unexpected) in 0.003 (0.003) seconds
+Test Suite 'NetworkRateTests' started at 2026-11-14 06:13:34.436.
+Test Suite 'NetworkRateTests' passed at 2026-11-14 06:13:34.436.
+	 Executed 7 tests, with 0 failures (0 unexpected) in 0.000 (0.001) seconds
+Test Suite 'SensorLogicTests' started at 2026-11-14 06:13:34.436.
+Test Suite 'SensorLogicTests' passed at 2026-11-14 06:13:34.437.
+	 Executed 8 tests, with 0 failures (0 unexpected) in 0.001 (0.001) seconds
+Test Suite 'ThermalStateTests' started at 2026-11-14 06:13:34.437.
+Test Suite 'ThermalStateTests' passed at 2026-11-14 06:13:34.710.
+	 Executed 7 tests, with 0 failures (0 unexpected) in 0.273 (0.273) seconds
+Test Suite 'ThermalsTests' started at 2026-11-14 06:13:34.710.
+Test Suite 'ThermalsTests' passed at 2026-11-14 06:13:34.711.
+	 Executed 4 tests, with 0 failures (0 unexpected) in 0.000 (0.000) seconds
+Test Suite 'ThresholdTests' started at 2026-11-14 06:13:34.711.
+Test Suite 'ThresholdTests' passed at 2026-11-14 06:13:34.711.
+	 Executed 3 tests, with 0 failures (0 unexpected) in 0.000 (0.000) seconds
+Test Suite 'UpdateLogicTests' started at 2026-11-14 06:13:34.712.
+Test Suite 'UpdateLogicTests' passed at 2026-11-14 06:13:34.713.
+	 Executed 10 tests, with 0 failures (0 unexpected) in 0.001 (0.002) seconds
+Test Suite 'UpdatePreferencesTests' started at 2026-11-14 06:13:34.713.
+Test Suite 'UpdatePreferencesTests' passed at 2026-11-14 06:13:34.715.
+	 Executed 2 tests, with 0 failures (0 unexpected) in 0.001 (0.002) seconds
+Test Suite 'UpdaterTests' started at 2026-11-14 06:13:34.715.
+Test Suite 'UpdaterTests' passed at 2026-11-14 06:13:34.720.
+	 Executed 6 tests, with 0 failures (0 unexpected) in 0.005 (0.005) seconds
+Test Suite 'CoreGlanceTests.xctest' passed at 2026-11-14 06:13:34.720.
+	 Executed 109 tests, with 0 failures (0 unexpected) in 0.289 (0.294) seconds
+Test Suite 'All tests' passed at 2026-11-14 06:13:34.720.
+	 Executed 109 tests, with 0 failures (0 unexpected) in 0.289 (0.294) seconds

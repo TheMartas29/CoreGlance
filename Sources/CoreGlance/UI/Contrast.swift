@@ -1,7 +1,8 @@
 import AppKit
 import SwiftUI
 
-/// sRGB barva v rozsahu 0...255 (bez AppKitu, aby šla použít v testech kontrastu).
+/// sRGB barva v rozsahu 0...255 (RGB a contrastRatio jsou čistá logika bez AppKitu;
+/// AppKit soubor importuje jen kvůli adaptivní NSColor níže).
 struct RGB: Equatable {
     let r: Double, g: Double, b: Double
 
@@ -26,25 +27,29 @@ func contrastRatio(_ a: RGB, _ b: RGB) -> Double {
 
 /// Barvy hodnot ve stavu warning/critical v popoveru. Systémové `.orange`/`.red` mají na světlém pozadí
 /// kontrast jen ~2,0:1 a ~3,3:1 (pod WCAG 4,5:1), proto má světlý režim tmavší odstíny.
-/// Tmavý režim zůstává u hodnot systémových barev (systemOrange/systemRed v dark).
+/// Tmavý warning je systemOrange (dark); tmavý critical je světlejší
+/// než systemRed (255,69,58), který má na pozadí 43/255 jen ≈4,15:1.
 enum WarningPalette {
     static let lightWarning = RGB(r: 150, g: 70, b: 0)
     static let lightCritical = RGB(r: 180, g: 0, b: 0)
     static let darkWarning = RGB(r: 255, g: 159, b: 10)
-    static let darkCritical = RGB(r: 255, g: 69, b: 58)
+    static let darkCritical = RGB(r: 255, g: 105, b: 97)
 
-    /// Pozadí popoveru (windowBackground): světlý ≈ bílá, tmavý ≈ 30/255.
+    /// Pozadí popoveru (windowBackground): světlý ≈ bílá, tmavý 43/255 jako kreslí Snapshotter
+    /// (Color(white: 0.17)); testy navíc kontrolují starší odhad 30/255.
     static let lightBackground = RGB.white
-    static let darkBackground = RGB(r: 30, g: 30, b: 30)
+    static let darkBackground = RGB(r: 43, g: 43, b: 43)
 
-    static let warning = adaptive(light: lightWarning, dark: darkWarning)
-    static let critical = adaptive(light: lightCritical, dark: darkCritical)
+    static let warningNS = adaptive(light: lightWarning, dark: darkWarning)
+    static let criticalNS = adaptive(light: lightCritical, dark: darkCritical)
+    static let warning = Color(nsColor: warningNS)
+    static let critical = Color(nsColor: criticalNS)
 
-    private static func adaptive(light: RGB, dark: RGB) -> Color {
-        Color(nsColor: NSColor(name: nil) { appearance in
+    private static func adaptive(light: RGB, dark: RGB) -> NSColor {
+        NSColor(name: nil) { appearance in
             let isDark = appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
             let c = isDark ? dark : light
             return NSColor(srgbRed: c.r / 255, green: c.g / 255, blue: c.b / 255, alpha: 1)
-        })
+        }
     }
 }

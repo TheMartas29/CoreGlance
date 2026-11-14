@@ -89,8 +89,13 @@
 - Výsledek: nový test podtečení na starém kódu padá (trap); celá sada po merge main viz níže.
 - Další krok: QA.
 
+## 2026-11-14 — coreglance#77 Ratchet: přeskočený test je chyba
+- Co: `check-test-count.sh` skončí kódem 1, když log obsahuje „with K test(s) skipped“ (K ≥ 1); XCTest přeskočený test počítá jako provedený. Fixture `scripts/fixtures/swift-test-real.log` je zkrácený skutečný výpis `swift test --disable-sandbox` (109 testů), `swift-test-skipped.log` z dočasného testu s XCTSkip (necommitnut). Opraven odkaz v záznamu #68.
+- Výsledek: `sh scripts/test-check-test-count.sh` zelené; 6 nových kontrol na původním skriptu padalo. `min-tests.txt` beze změny (109).
+- Další krok: QA.
+
 ## 2026-11-13 — coreglance#68 CI ratchet počtu testů
-- Co: `scripts/check-test-count.sh <log> [min]` vezme nejvyšší „Executed N tests“ z logu `swift test` a porovná s `scripts/min-tests.txt` (109 = skutečný počet na main po merge #66/#67); N < min nebo chybějící souhrn = nenulový kód. Test `scripts/test-check-test-count.sh` s fixture logy (stejně, víc, méně, bez souhrnu, víc řádků Executed). CONTRIBUTING věta. Zapojení do `build.yml` (nový obsah v `.puppet/github/workflows/build.yml`, dispečer kopíruje).
+- Co: `scripts/check-test-count.sh <log> [min]` vezme nejvyšší „Executed N tests“ z logu `swift test` a porovná s `scripts/min-tests.txt` (109 = skutečný počet na main po merge #66/#67); N < min nebo chybějící souhrn = nenulový kód. Test `scripts/test-check-test-count.sh` s fixture logy (stejně, víc, méně, bez souhrnu, víc řádků Executed). CONTRIBUTING věta. Zapojení do `build.yml` (krok „Test count ratchet“ v `.github/workflows/build.yml`).
 - Výsledek: `sh scripts/test-check-test-count.sh` všechny ok; `swift test --disable-sandbox` = 109 testů. Test na main padá (skript neexistuje).
 - Další krok: QA; minimum se zvedá ručně při přidání testů.
 
@@ -105,8 +110,13 @@
 - Další krok: na živém M6 mimo sandbox ověřit, zda vzorkování nevrací CPU kanál mimo seznam (`--dump` cpuWatts != nil); jinak SMC/jiná cesta jako nový tiket.
 
 ## 2026-11-14 — coreglance#78 sample() volá cpuJoules
-- Co: `sample()` sesbírá kanály Energy Model jako n-tice a CPU část počítá `SoCMetrics.cpuJoules` (inline `cpuJ` zmizelo); GPU/ANE/DRAM beze změny. Komentář k nepoužitému `subGroup`. Test: CPU Energy jen s neznámou jednotkou = nil (záměr #66). RESEARCH.md 7 320 kanálů. `scripts/min-tests.txt` = 110.
+- Co: `sample()` sesbírá kanály Energy Model jako n-tice a CPU část počítá `SoCMetrics.cpuJoules` (inline `cpuJ` zmizelo); GPU/ANE/DRAM beze změny. Komentář k nepoužitému `subGroup`. Test: CPU Energy jen s neznámou jednotkou = nil (záměr #66). RESEARCH.md 7 320 kanálů. `scripts/min-tests.txt` = 114 (po merge main s #76: 113 + 1).
 - Mutační důkaz: v `cpuJoules` `total = (total ?? 0) + …` → `total = …` shodí `testCPUJoulesSumsMatchingChannelsOnly`: `XCTAssertEqualWithAccuracy failed: ("0.5") is not equal to ("2.5")`. Vráceno zpět.
-- Výsledek: `swift build` bez varování, `swift test --disable-sandbox` 110 testů zelených.
+- Výsledek: `swift build` bez varování, `swift test --disable-sandbox` 110 testů zelených (před merge main).
 - Poznámka: nový test neznámé jednotky projde i na main (cpuJoules to tam už umí); tiket ho chtěl jako zápis záměru. Ochranu produkčního sčítání dává napojení sample() + stávající test sčítání.
+- Další krok: QA.
+
+## 2026-11-14 — coreglance#76 Kontrast darkCritical na skutečném tmavém pozadí
+- Co: Přepočet potvrdil nález: darkCritical (255,69,58) vůči 43/255 = 4,156:1 (<4,5), test `testDarkPaletteMeetsAAOnSnapshotBackground` na původním kódu padal ("4.156245435626784" is less than "4.5"). darkCritical změněn na (255,105,97), darkBackground sjednoceno na 43/255 (jako Snapshotter), testy kontrolují i 30/255 a windowBackgroundColor pod darkAqua. Adaptivní NSColor (`warningNS`/`criticalNS`) otestován pod .aqua/.darkAqua. Komentář v Contrast.swift opraven. Světlý režim beze změny.
+- Výsledek: `swift test --disable-sandbox` 113 testů zelených (4 nové), min-tests.txt = 113.
 - Další krok: QA.

@@ -42,6 +42,7 @@ These are the most valuable contribution. Open a *Compatibility report* issue wi
 - Keep PRs focused. Match the existing style: small types, comments explaining *why*.
 - Make sure `swift build` and `scripts/build-app.sh` succeed with no warnings.
 - CI runs `swift build` (failing on any warning) and `swift test` on every push and PR.
+- CI also fails when any test is skipped (`XCTSkip`), because XCTest counts a skipped test as executed.
 - CI fails when `swift test` runs fewer tests than `scripts/min-tests.txt`. When you add tests, raise that number
   (CI prints the new value); nobody may lower it without a written justification in the PR.
 - Describe which Mac(s) you tested on.
