@@ -2,6 +2,8 @@
 
 ## [Nevydáno]
 
+## [0.4.5] – 2026-11-14
+
 ### Změněno
 
 - Ukládání nastavení (metriky a jejich pořadí, interval, jednotky, prahy) je pokryté testy včetně poškozených nebo starých hodnot; chování aplikace se nemění. (#79)
