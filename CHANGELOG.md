@@ -6,6 +6,22 @@
 
 - Disk activity: čtení a zápis se všude zobrazují ve stejném pořadí a formátu, nejdřív čtení, pak zápis (v liště `R 51K` nad `W 1.6M`, v popoveru `R 51K/s  W 1.6M/s`), stejně jako ↓ před ↑ u sítě. Dřív byl v liště zápis nad čtením. (#103)
 
+## [0.9.1] – 2026-11-14
+
+### Opraveno
+
+- Notifikace o kritické teplotě a thermal state se při kmitání mezi Serious a Critical už neopakují dřív než po 10 minutách (pro každou úroveň zvlášť). Po vypnutí a opětovném zapnutí přepínače se nepošle upozornění na stav, který trval už před zapnutím, a nový vzestup se oznámí. (#102)
+
+## [0.9.0] – 2026-11-14
+
+### Přidáno
+
+- V Nastavení → General je nový přepínač „Install updates automatically“. Po zapnutí se aplikace po nalezení novější verze sama stáhne, ověří kontrolní součet SHA-256, nahradí se a znovu spustí (menu bar na chvíli zmizí). Je ve výchozím stavu vypnutý, nelze ho zapnout při vypnuté kontrole aktualizací ani když je aplikace mimo zapisovatelnou složku. Při selhání se stejná verze v téže relaci znovu nezkouší a v Nastavení zůstane chybová hláška. Kontrolní součet nechrání před kompromitovaným účtem na GitHubu. (#101)
+
+### Opraveno
+
+- Restart po instalaci aktualizace už nespoléhá na pevnou vteřinu čekání: nová verze se spustí, až stará instance skutečně skončí (nejdéle po 15 s), a tlačítko Install and restart nejde během toho kliknout podruhé. (#101)
+
 ## [0.8.0] – 2026-11-14
 
 ### Přidáno
