@@ -53,6 +53,8 @@ extension Metric {
 /// Polls every sensor on a background queue and publishes snapshots on the main thread.
 final class Monitor: ObservableObject {
     @Published private(set) var snapshot = Snapshot()
+    /// Last five minutes of CPU, GPU, memory and CPU temperature; memory only, main thread only.
+    @Published private(set) var histories = Histories()
 
     private let queue = DispatchQueue(label: "CoreGlance.monitor", qos: .utility)
     private var timer: DispatchSourceTimer?
@@ -89,7 +91,11 @@ final class Monitor: ObservableObject {
         t.setEventHandler { [weak self] in
             guard let self else { return }
             let s = self.read()
-            DispatchQueue.main.async { self.snapshot = s }
+            let now = ProcessInfo.processInfo.systemUptime
+            DispatchQueue.main.async {
+                self.histories.record(s, at: now)
+                self.snapshot = s
+            }
         }
         t.resume()
         timer = t

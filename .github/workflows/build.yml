@@ -84,4 +84,6 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           sh scripts/release-notes.sh "${GITHUB_REF_NAME#v}" > release-notes.md
-          gh release create "$GITHUB_REF_NAME" CoreGlance.zip --notes-file release-notes.md
+          # One shasum line ("<hash>  CoreGlance.zip") from the very zip that is uploaded; the app verifies it before installing.
+          shasum -a 256 CoreGlance.zip > CoreGlance.zip.sha256
+          gh release create "$GITHUB_REF_NAME" CoreGlance.zip CoreGlance.zip.sha256 --notes-file release-notes.md

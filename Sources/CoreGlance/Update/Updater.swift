@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import os
 
@@ -31,12 +32,57 @@ final class Updater: ObservableObject {
     private var busy = false
     private var timer: Timer?
 
+    enum InstallState: Equatable { case idle, installing, failed(String) }
+    @Published private(set) var installState = InstallState.idle
+    private let downloader: UpdateDownloader
+    private let appURL: URL
+    private let bundleID: String
+    private let relaunch: (URL) -> Void
+
     init(prefs: Preferences = .shared,
          network: UpdateNetwork = GitHubNetwork(),
-         currentVersion: String? = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) {
+         currentVersion: String? = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String,
+         downloader: UpdateDownloader = GitHubDownloader(),
+         appURL: URL = Bundle.main.bundleURL,
+         bundleID: String = Bundle.main.bundleIdentifier ?? "",
+         relaunch: @escaping (URL) -> Void = Updater.startNewAndQuit) {
         self.prefs = prefs
         self.network = network
         self.currentVersion = currentVersion
+        self.downloader = downloader
+        self.appURL = appURL
+        self.bundleID = bundleID
+        self.relaunch = relaunch
+    }
+
+    /// The button is offered only when the release has a checksum and this app can replace itself.
+    func canInstall(_ release: ReleaseInfo) -> Bool {
+        release.checksumURL != nil && UpdateInstaller.canInstall(into: appURL)
+    }
+
+    /// Install and restart. Fail-soft: an error becomes a message in Settings and the app keeps running.
+    func installAvailable() async {
+        guard let release = availableUpdate, canInstall(release), installState != .installing else { return }
+        installState = .installing
+        do {
+            try await UpdateInstaller.install(release, into: appURL, bundleID: bundleID, downloader: downloader)
+        } catch {
+            let text = (error as? UpdateInstallError)?.message ?? "Update failed. The old version is kept."
+            Self.log.error("install failed: \(text)")
+            installState = .failed(text)
+            return
+        }
+        installState = .idle
+        relaunch(appURL)
+    }
+
+    /// Starts the replaced app after a short delay (so this instance has quit), then quits this one.
+    nonisolated static func startNewAndQuit(_ app: URL) {
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: "/bin/sh")
+        p.arguments = ["-c", "sleep 1; exec /usr/bin/open \"$1\"", "sh", app.path]
+        try? p.run()
+        DispatchQueue.main.async { NSApplication.shared.terminate(nil) }
     }
 
     /// A newer release known from an earlier check (also while auto-update is off).
