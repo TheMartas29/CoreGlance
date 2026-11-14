@@ -30,6 +30,8 @@ final class Updater: ObservableObject {
     private let network: UpdateNetwork
     private let currentVersion: String?
     private var busy = false
+    /// Version whose install failed in this session; automatic install does not retry it.
+    private var failedVersion: String?
     private var timer: Timer?
 
     enum InstallState: Equatable { case idle, installing, failed(String) }
@@ -60,6 +62,9 @@ final class Updater: ObservableObject {
         release.checksumURL != nil && UpdateInstaller.canInstall(into: appURL)
     }
 
+    /// This app sits in a writable folder, so it could replace itself (gates the auto-install switch).
+    var canReplaceSelf: Bool { UpdateInstaller.canInstall(into: appURL) }
+
     /// Install and restart. Fail-soft: an error becomes a message in Settings and the app keeps running.
     func installAvailable() async {
         guard let release = availableUpdate, canInstall(release), installState != .installing else { return }
@@ -70,17 +75,24 @@ final class Updater: ObservableObject {
             let text = (error as? UpdateInstallError)?.message ?? "Update failed. The old version is kept."
             Self.log.error("install failed: \(text)")
             installState = .failed(text)
+            failedVersion = release.version
             return
         }
-        installState = .idle
+        // Stay in .installing until the process exits, so the button cannot be clicked a second time.
         relaunch(appURL)
     }
 
-    /// Starts the replaced app after a short delay (so this instance has quit), then quits this one.
+    /// Arguments for `/bin/sh`: wait until `pid` (this instance) is gone, at most `timeout` seconds, then open the app.
+    nonisolated static func restartArguments(app: URL, pid: Int32, timeout: Int, opener: String = "/usr/bin/open") -> [String] {
+        let script = "n=0; while kill -0 \"$1\" 2>/dev/null && [ \"$n\" -lt $(($3 * 10)) ]; do sleep 0.1; n=$((n + 1)); done; exec \(opener) \"$2\""
+        return ["-c", script, "sh", String(pid), app.path, String(timeout)]
+    }
+
+    /// Starts the replaced app once this instance has quit (waits for its PID, max 15 s), then quits this one.
     nonisolated static func startNewAndQuit(_ app: URL) {
         let p = Process()
         p.executableURL = URL(fileURLWithPath: "/bin/sh")
-        p.arguments = ["-c", "sleep 1; exec /usr/bin/open \"$1\"", "sh", app.path]
+        p.arguments = restartArguments(app: app, pid: ProcessInfo.processInfo.processIdentifier, timeout: 15)
         try? p.run()
         DispatchQueue.main.async { NSApplication.shared.terminate(nil) }
     }
@@ -122,6 +134,11 @@ final class Updater: ObservableObject {
         if UpdateLogic.isNewer(release.version, than: currentVersion) {
             prefs.knownRelease = release
             Self.log.info("update \(release.version) available")
+            let available = availableUpdate
+            if UpdateLogic.shouldInstallNow(autoInstall: prefs.autoInstall, canInstall: available.map(canInstall) ?? false,
+                                            available: available, failedVersion: failedVersion) {
+                await installAvailable()
+            }
         } else {
             prefs.knownRelease = nil
         }

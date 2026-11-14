@@ -174,6 +174,8 @@ final class Preferences: ObservableObject {
 
     /// Look for new GitHub releases automatically (default on). Installing is not implemented yet.
     @Published var autoUpdate: Bool { didSet { defaults.set(autoUpdate, forKey: "autoUpdate") } }
+    /// Install a found release without a click (default off: it downloads and starts code unattended).
+    @Published var autoInstall: Bool { didSet { defaults.set(autoInstall, forKey: "autoInstall") } }
     var lastUpdateCheck: Date? {
         get { defaults.object(forKey: "lastUpdateCheck") as? Date }
         set { defaults.set(newValue, forKey: "lastUpdateCheck") }
@@ -199,6 +201,7 @@ final class Preferences: ObservableObject {
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         autoUpdate = defaults.object(forKey: "autoUpdate") as? Bool ?? true
+        autoInstall = defaults.object(forKey: "autoInstall") as? Bool ?? false
         enabled = Preferences.initialMetrics(stored: defaults.stringArray(forKey: "metrics"))
         interval = defaults.object(forKey: "interval") as? Double ?? 2
         showGlyphs = defaults.object(forKey: "showGlyphs") as? Bool ?? true
