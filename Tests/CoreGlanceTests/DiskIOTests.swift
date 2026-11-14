@@ -102,18 +102,35 @@ final class DiskIOTests: XCTestCase {
 
     // MARK: renderer / preferences
 
-    func testRendererStacksWriteOverRead() {
+    func testRendererStacksReadOverWrite() {
         var s = Snapshot()
         s.diskIO = DiskIOStats(read: 2_097_152, write: 512)  // 2 MiB/s, 512 B/s
         let t = StatusBarRenderer.stackedText(for: .diskActivity, in: s)
-        XCTAssertEqual(t?.top, "W512B")
-        XCTAssertEqual(t?.bottom, "R2.0M")
+        XCTAssertEqual(t?.top, "R 2.0M")
+        XCTAssertEqual(t?.bottom, "W 512B")
+    }
+
+    func testPopoverActivityTextReadBeforeWrite() {
+        // 52_224 B/s = 51 KiB/s; 1_677_722 B/s = 1.6 MiB/s (hand-computed)
+        XCTAssertEqual(Format.diskActivity(read: 52_224, write: 1_677_722), "R 51K/s  W 1.6M/s")
+        XCTAssertEqual(Format.diskActivity(read: 0, write: 0), "R 0B/s  W 0B/s")
+    }
+
+    func testWidestStackedTextFitsInBarImage() {
+        var s = Snapshot()
+        s.diskIO = DiskIOStats(read: 999 * 1_048_576, write: 999 * 1_048_576)
+        XCTAssertEqual(StatusBarRenderer.stackedText(for: .diskActivity, in: s)?.bottom, "W 999M")
+        let prefs = Preferences(defaults: UserDefaults(suiteName: "disk-activity-width-test")!)
+        prefs.enabled = [.diskActivity]
+        let image = StatusBarRenderer.image(for: s, prefs: prefs)
+        XCTAssertNotNil(image)
+        XCTAssertLessThan(image?.size.width ?? 999, 60)
     }
 
     func testRendererWithoutDataShowsDashesAndDoesNotCrash() {
         let t = StatusBarRenderer.stackedText(for: .diskActivity, in: Snapshot())
-        XCTAssertEqual(t?.top, "W–")
-        XCTAssertEqual(t?.bottom, "R–")
+        XCTAssertEqual(t?.top, "R –")
+        XCTAssertEqual(t?.bottom, "W –")
         XCTAssertEqual(StatusBarRenderer.value(for: .diskActivity, in: Snapshot(), prefs: Preferences.shared), "")
     }
 
