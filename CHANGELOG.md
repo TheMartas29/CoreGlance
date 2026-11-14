@@ -2,6 +2,8 @@
 
 ## [Nevydáno]
 
+## [0.10.0] – 2026-11-14
+
 ### Přidáno
 
 - Nastavení → General má tlačítko „Save diagnostics…“: jedním kliknutím uložíte diagnostický výpis (stejný jako `--dump`) do souboru a přiložíte ho k hlášení kompatibility, bez Terminálu. Výpis se vytváří na pozadí, neobsahuje jméno uživatele ani název počítače a aplikace ho nikam neodesílá. README, CONTRIBUTING a šablona hlášení kompatibility nově říkají, ať se soubor přiloží k issue místo vkládání celého výpisu. (#104)
