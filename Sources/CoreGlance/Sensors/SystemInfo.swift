@@ -224,6 +224,66 @@ final class NetworkReader {
 
 struct DiskStats { var free: Double = 0; var total: Double = 0 }
 
+struct DiskIOStats: Equatable { var read: Double = 0; var write: Double = 0 }  // bytes per second
+
+/// Disk throughput from the `Statistics` dictionary of every `IOBlockStorageDriver` (64-bit byte counters, as iostat reads them).
+final class DiskIOReader {
+    typealias Counters = [UInt64: (read: UInt64, write: UInt64)]  // keyed by registry entry ID of the controller
+
+    private var previous: Counters = [:]
+    private var previousTime: Date?
+
+    /// Sums `Bytes (Read)` / `Bytes (Write)` over the given Statistics dictionaries.
+    /// An entry whose keys are missing, not numbers or negative is skipped as a whole.
+    static func totals(of statistics: [[String: Any]]) -> (read: UInt64, write: UInt64) {
+        var read: UInt64 = 0, write: UInt64 = 0
+        for s in statistics {
+            guard let r = s["Bytes (Read)"] as? NSNumber, let w = s["Bytes (Write)"] as? NSNumber,
+                  r.int64Value >= 0, w.int64Value >= 0 else { continue }
+            read &+= r.uint64Value
+            write &+= w.uint64Value
+        }
+        return (read, write)
+    }
+
+    /// Bytes per second from two counter snapshots, summed over controllers. Controllers missing from `previous`
+    /// are ignored, a counter that went down (device reattached) counts as 0, `dt` is clamped to at least 1 ms.
+    static func rate(previous: Counters, current: Counters, dt: TimeInterval) -> DiskIOStats {
+        let dt = max(dt, 0.001)
+        var stats = DiskIOStats()
+        for (id, value) in current {
+            guard let old = previous[id] else { continue }
+            if value.read >= old.read { stats.read += Double(value.read - old.read) / dt }
+            if value.write >= old.write { stats.write += Double(value.write - old.write) / dt }
+        }
+        return stats
+    }
+
+    /// Current counters of all controllers; empty when the Mac exposes none.
+    static func counters() -> Counters {
+        var result: Counters = [:]
+        IORegistry.forEach(class: "IOBlockStorageDriver") { entry in
+            var id: UInt64 = 0
+            guard IORegistryEntryGetRegistryEntryID(entry, &id) == KERN_SUCCESS,
+                  let stats = IORegistry.property(entry, "Statistics") as? [String: Any] else { return }
+            let t = totals(of: [stats])
+            // totals() skips unusable entries; a controller without both keys is not counted at all.
+            if stats["Bytes (Read)"] is NSNumber, stats["Bytes (Write)"] is NSNumber { result[id] = t }
+        }
+        return result
+    }
+
+    /// nil when no controller is found (metric unavailable); zeros on the first call (no previous reading).
+    func sample() -> DiskIOStats? {
+        let current = Self.counters()
+        guard !current.isEmpty else { return nil }
+        let now = Date()
+        defer { previous = current; previousTime = now }
+        guard let last = previousTime else { return DiskIOStats() }
+        return Self.rate(previous: previous, current: current, dt: now.timeIntervalSince(last))
+    }
+}
+
 enum DiskReader {
     /// Free space on the boot volume as Finder reports it (includes purgeable space).
     static func read() -> DiskStats {

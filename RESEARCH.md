@@ -44,6 +44,9 @@ This file summarizes the research behind the implementation. Every value comes f
 - Used = App + Wired + Compressed, with App = `internal − purgeable` pages, from `host_statistics64(HOST_VM_INFO64)`. This matches Activity Monitor and equals the formula Stats uses.
 - Pressure comes from `kern.memorystatus_vm_pressure_level` (1/2/4), swap from `vm.swapusage`.
 
+## Disk activity
+- Every `IOBlockStorageDriver` service in the IORegistry has a `Statistics` dictionary with 64-bit counters `Bytes (Read)` and `Bytes (Write)` (the same source as iostat; no root). Verified with `ioreg -c IOBlockStorageDriver -r -w0` on this Mac (macOS 27.2): the keys are present and numeric. Speed = delta of the counters over the interval, summed over all controllers. A counter that goes down (device reattached) counts as 0. With no such service the metric is unavailable and hidden.
+
 ## System power, fans
 - SMC `PSTR` gives whole-system power in watts. The fallback is the battery's `SystemPowerIn`.
 - Fans: `FNum`, `FnAc`, `FnMx`, in `flt` on AS and `fpe2` on Intel. Fanless Macs report no `FNum`.

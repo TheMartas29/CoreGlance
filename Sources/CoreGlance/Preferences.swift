@@ -11,7 +11,7 @@ enum Metric: String, CaseIterable, Identifiable {
     case cpu, cpuCores, cpuFrequency, eFrequency, cpuTemperature
     case gpu, gpuFrequency, gpuTemperature
     case memory, memoryPressure, compressed, swap
-    case disk, ssdTemperature
+    case disk, diskActivity, ssdTemperature
     case battery, batteryTemperature
     case power, fan, thermalState
     case network
@@ -23,7 +23,7 @@ enum Metric: String, CaseIterable, Identifiable {
         case .cpu, .cpuCores, .cpuFrequency, .eFrequency, .cpuTemperature: return .cpu
         case .gpu, .gpuFrequency, .gpuTemperature: return .gpu
         case .memory, .memoryPressure, .compressed, .swap: return .memory
-        case .disk, .ssdTemperature: return .disk
+        case .disk, .ssdTemperature, .diskActivity: return .disk
         case .battery, .batteryTemperature: return .battery
         case .power, .fan, .thermalState: return .system
         case .network: return .network
@@ -52,6 +52,7 @@ enum Metric: String, CaseIterable, Identifiable {
         case .fan: return "Fan speed"
         case .thermalState: return "Thermal state"
         case .network: return "Network speed"
+        case .diskActivity: return "Disk activity"
         }
     }
 
@@ -74,6 +75,7 @@ enum Metric: String, CaseIterable, Identifiable {
         case .fan: return "fan"
         case .thermalState: return "thermometer.medium"
         case .network: return "network"
+        case .diskActivity: return "arrow.up.arrow.down.circle"
         }
     }
 
@@ -101,6 +103,7 @@ enum Metric: String, CaseIterable, Identifiable {
         case .fan: return "FAN"
         case .thermalState: return "THERM"
         case .network: return "NET"
+        case .diskActivity: return "IO"
         }
     }
 

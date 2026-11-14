@@ -125,3 +125,8 @@
 - Co: `PreferencesTests` (9 testů): výchozí hodnoty, round-trip všech @Published polí, pořadí a duplicity v `set`, prahy (výchozí se neukládá, přežije restart, reset), poškozená data (neznámé enumy, práh s ≠2 prvky, neznámá metrika). Vlastní suite, tearDown ji maže. Chyba v Preferences nenalezena, kód beze změny.
 - Výsledek: po merge main `scripts/min-tests.txt` = 114 + 9 = 123 (skutečný počet viz swift test).
 - Další krok: QA.
+
+## 2026-11-14 — coreglance#90 Metrika Disk activity
+- Co: `DiskIOReader` (SystemInfo.swift): čisté `totals(of:)` a `rate(previous:current:dt:)` nad 64bitovými čítači `Bytes (Read/Write)` z IOBlockStorageDriver Statistics, `Snapshot.diskIO` (nil = nedostupné), `Metric.diskActivity` (skupina Disk, vypnutá), stacked W/R v liště, řádek Activity v popoveru, `--dump` řádek `disk io`. Testy v `DiskIOTests` (14), tabulka dostupnosti a počet metrik 21 upraveny.
+- Výsledek: `swift build` bez varování, `swift test --disable-sandbox` 137 testů zelených, min-tests.txt = 137; `--dump` ukáže `disk io: read=1.6M/s write=51K/s`.
+- Další krok: QA.
