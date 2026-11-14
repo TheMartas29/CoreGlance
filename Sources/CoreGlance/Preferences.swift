@@ -11,7 +11,7 @@ enum Metric: String, CaseIterable, Identifiable {
     case cpu, cpuCores, cpuFrequency, eFrequency, cpuTemperature
     case gpu, gpuFrequency, gpuTemperature
     case memory, memoryPressure, compressed, swap
-    case disk, ssdTemperature
+    case disk, diskActivity, ssdTemperature
     case battery, batteryTemperature
     case power, fan, thermalState
     case network
@@ -23,7 +23,7 @@ enum Metric: String, CaseIterable, Identifiable {
         case .cpu, .cpuCores, .cpuFrequency, .eFrequency, .cpuTemperature: return .cpu
         case .gpu, .gpuFrequency, .gpuTemperature: return .gpu
         case .memory, .memoryPressure, .compressed, .swap: return .memory
-        case .disk, .ssdTemperature: return .disk
+        case .disk, .ssdTemperature, .diskActivity: return .disk
         case .battery, .batteryTemperature: return .battery
         case .power, .fan, .thermalState: return .system
         case .network: return .network
@@ -52,6 +52,7 @@ enum Metric: String, CaseIterable, Identifiable {
         case .fan: return "Fan speed"
         case .thermalState: return "Thermal state"
         case .network: return "Network speed"
+        case .diskActivity: return "Disk activity"
         }
     }
 
@@ -74,6 +75,7 @@ enum Metric: String, CaseIterable, Identifiable {
         case .fan: return "fan"
         case .thermalState: return "thermometer.medium"
         case .network: return "network"
+        case .diskActivity: return "arrow.up.arrow.down.circle"
         }
     }
 
@@ -101,6 +103,7 @@ enum Metric: String, CaseIterable, Identifiable {
         case .fan: return "FAN"
         case .thermalState: return "THERM"
         case .network: return "NET"
+        case .diskActivity: return "IO"
         }
     }
 
@@ -159,6 +162,8 @@ final class Preferences: ObservableObject {
     @Published var colorize: Bool { didSet { defaults.set(colorize, forKey: "colorize") } }
     /// System notification when a temperature turns critical or the thermal state is Serious/Critical (default off).
     @Published var notifyOnCritical: Bool { didSet { defaults.set(notifyOnCritical, forKey: "notifyOnCritical") } }
+    /// Draw the 5-minute history graphs in the popover (default on).
+    @Published var showHistory: Bool { didSet { defaults.set(showHistory, forKey: "showHistory") } }
     /// User overrides of the default thresholds.
     @Published var customThresholds: [Metric: Threshold] {
         didSet {
@@ -179,12 +184,14 @@ final class Preferences: ObservableObject {
             guard let v = defaults.string(forKey: "knownReleaseVersion"),
                   let d = defaults.string(forKey: "knownReleaseDownload").flatMap(URL.init(string:)),
                   let p = defaults.string(forKey: "knownReleasePage").flatMap(URL.init(string:)) else { return nil }
-            return ReleaseInfo(version: v, downloadURL: d, pageURL: p)
+            return ReleaseInfo(version: v, downloadURL: d, pageURL: p,
+                               checksumURL: defaults.string(forKey: "knownReleaseChecksum").flatMap(URL.init(string:)))
         }
         set {
             defaults.set(newValue?.version, forKey: "knownReleaseVersion")
             defaults.set(newValue?.downloadURL.absoluteString, forKey: "knownReleaseDownload")
             defaults.set(newValue?.pageURL.absoluteString, forKey: "knownReleasePage")
+            defaults.set(newValue?.checksumURL?.absoluteString, forKey: "knownReleaseChecksum")
         }
     }
 
@@ -202,6 +209,7 @@ final class Preferences: ObservableObject {
         font = BarFont(rawValue: defaults.string(forKey: "font") ?? "") ?? .system
         colorize = defaults.object(forKey: "colorize") as? Bool ?? true
         notifyOnCritical = defaults.bool(forKey: "notifyOnCritical")
+        showHistory = defaults.object(forKey: "showHistory") as? Bool ?? true
         let plain = defaults.dictionary(forKey: "thresholds") as? [String: [Double]] ?? [:]
         customThresholds = plain.reduce(into: [:]) { result, item in
             if let m = Metric(rawValue: item.key), item.value.count == 2 { result[m] = Threshold(warning: item.value[0], critical: item.value[1]) }

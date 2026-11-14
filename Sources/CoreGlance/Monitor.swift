@@ -14,6 +14,8 @@ struct Snapshot {
     var battery = BatteryStats()
     var network = NetworkStats()
     var disk = DiskStats()
+    /// nil when no storage controller was found (metric unavailable).
+    var diskIO: DiskIOStats?
     var thermalState: ThermalLevel = .unknown
     /// False until the first real reading; until then every metric counts as available.
     var sampled = false
@@ -34,6 +36,7 @@ extension Metric {
         case .eFrequency: return s.soc != nil && s.cpuE != nil
         case .gpu: return s.gpu != nil
         case .gpuFrequency: return s.soc?.gpuMHz != nil
+        case .diskActivity: return s.diskIO != nil
         case .disk: return s.disk.total > 0
         case .cpuTemperature: return s.thermals.cpu != nil
         case .gpuTemperature: return s.thermals.gpu != nil
@@ -50,6 +53,8 @@ extension Metric {
 /// Polls every sensor on a background queue and publishes snapshots on the main thread.
 final class Monitor: ObservableObject {
     @Published private(set) var snapshot = Snapshot()
+    /// Last five minutes of CPU, GPU, memory and CPU temperature; memory only, main thread only.
+    @Published private(set) var histories = Histories()
 
     private let queue = DispatchQueue(label: "CoreGlance.monitor", qos: .utility)
     private var timer: DispatchSourceTimer?
@@ -60,6 +65,7 @@ final class Monitor: ObservableObject {
     private var soc: SoCMetrics?
     private var thermals: Thermals?
     private let network = NetworkReader()
+    private let diskIO = DiskIOReader()
     private let chipName = Sysctl.string("machdep.cpu.brand_string") ?? "Unknown CPU"
 
     var chip: String { chipName }
@@ -74,6 +80,7 @@ final class Monitor: ObservableObject {
             thermals = Thermals()
             _ = cpuLoad.sample()
             _ = network.sample()
+            _ = diskIO.sample()
         }
     }
 
@@ -84,7 +91,11 @@ final class Monitor: ObservableObject {
         t.setEventHandler { [weak self] in
             guard let self else { return }
             let s = self.read()
-            DispatchQueue.main.async { self.snapshot = s }
+            let now = ProcessInfo.processInfo.systemUptime
+            DispatchQueue.main.async {
+                self.histories.record(s, at: now)
+                self.snapshot = s
+            }
         }
         t.resume()
         timer = t
@@ -118,6 +129,7 @@ final class Monitor: ObservableObject {
         s.battery = BatteryReader.read()
         s.network = network.sample()
         s.disk = DiskReader.read()
+        s.diskIO = diskIO.sample()
         s.thermalState = ThermalLevel(thermalSource())
         return s
     }
@@ -138,6 +150,7 @@ final class Monitor: ObservableObject {
             lines.append(String(describing: s.thermals))
             lines.append(String(describing: s.battery))
             lines.append(String(describing: s.network))
+            lines.append("disk io: " + (s.diskIO.map { "read=\(Format.rate($0.read))/s write=\(Format.rate($0.write))/s" } ?? "unavailable"))
             lines.append("thermal state: \(s.thermalState.fullName)")
             // Nové sekce jsou na konci, aby stávající řádky zůstaly beze změny (vstup compatibility reportů).
             lines.append(contentsOf: DumpFormat.coreLines())

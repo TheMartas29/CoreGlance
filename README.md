@@ -47,14 +47,15 @@ Most menu bar monitors either pull in a pile of frameworks, need a privileged he
 - **CPU:** total usage, **P-core vs E-core usage**, per-core bars, and **live cluster frequency in GHz**, calculated the same way as MX Power Gadget.
 - **GPU:** usage, live frequency, temperature and power.
 - **Memory:** used (GB or %), app / wired / **compressed**, **swap**, memory pressure. These show how far you are overflowing physical RAM.
-- **Disk:** free space on the boot volume.
+- **History graphs:** a small 5-minute graph under CPU, GPU, memory and CPU temperature in the popover (kept in memory only, can be turned off in Settings).
+- **Disk:** free space on the boot volume, plus live read and write speed (Disk activity, off by default).
 - **Temperatures:** CPU, GPU, **battery**, SSD. You can show the average or the hottest sensor.
 - **Battery:** charge, charging state, time remaining, health, cycle count, charge/discharge power.
 - **Power:** whole-system watts, CPU, GPU, Neural Engine and DRAM power.
 - **Network** down/up speed, **fan speed** on Macs that have fans, and the system **thermal state** (Nominal / Fair / Serious / Critical), so you see when macOS is throttling you because of heat.
 - **Temperature alerts:** CPU, GPU, battery and SSD temperatures turn orange or red at warning and critical levels. The defaults are [researched](RESEARCH.md#alert-thresholds) and can be adjusted.
 - **Critical notifications (off by default):** optionally get a regular macOS notification when a temperature reaches the critical level or the thermal state becomes Serious or Critical, even if the menu bar is out of sight. Local only, repeated at most every 10 minutes; macOS asks for permission when you turn it on in Settings.
-- **Fully configurable menu bar:** pick any combination of 20 metrics (only the ones your Mac can actually read are offered), with SF Symbol glyphs, optional labels, and SF Pro or SF Mono font.
+- **Fully configurable menu bar:** pick any combination of 21 metrics (only the ones your Mac can actually read are offered), with SF Symbol glyphs, optional labels, and SF Pro or SF Mono font.
 - **Native and light:** AppKit + SwiftUI, a ~1 MB universal binary, one background timer, light and dark mode, launch at login.
 
 ## Install
@@ -74,7 +75,7 @@ Most menu bar monitors either pull in a pile of frameworks, need a privileged he
 
 ### Updates
 
-CoreGlance checks for a new release at start and then at most once every 24 hours. It asks the public GitHub API (`https://api.github.com/repos/TheMartas29/CoreGlance/releases/latest`, no account, nothing about you is sent). When a newer release exists, **Settings** shows "Update available: X.Y.Z" with a link to the release page. (Installing the update by itself is coming in a follow-up; for now download it from the release page.)
+CoreGlance checks for a new release at start and then at most once every 24 hours. It asks the public GitHub API (`https://api.github.com/repos/TheMartas29/CoreGlance/releases/latest`, no account, nothing about you is sent). When a newer release exists, **Settings** shows "Update available: X.Y.Z" with a link to the release page and, when the app sits in a writable folder (such as /Applications), an **Install and restart** button. One click downloads `CoreGlance.zip` and `CoreGlance.zip.sha256` from GitHub Releases, checks the SHA-256, checks that the app inside has the same bundle identifier and the release's version, replaces the running app (the old one is kept as a backup until the swap worked) and starts the new one. Any failure shows a short message in Settings and leaves the installed app untouched; the release page link stays as a fallback. The checksum protects against a damaged download, not against a compromised GitHub account.
 
 To turn it off, clear **Settings → General → Check for updates automatically**; then the app makes no network requests at all. Releases are not notarized (see *First launch*).
 
@@ -93,7 +94,7 @@ To work on the code, `swift build && .build/debug/CoreGlance` runs it straight f
 
 ### Update and uninstall
 
-- **Update:** replace the app in /Applications with the new version.
+- **Update:** click **Install and restart** in Settings (see *Updates*), or replace the app in /Applications with the new version yourself.
 - **Uninstall:** quit CoreGlance (popover → **Quit**) and delete the app. Settings live in `~/Library/Preferences/io.github.coreglance.plist`.
 
 ## Usage
@@ -144,6 +145,7 @@ Every value comes from an interface a normal user process may read:
 | Memory, swap, pressure | `host_statistics64`, `vm.swapusage`, `kern.memorystatus_vm_pressure_level` |
 | Battery | `AppleSmartBattery` (IORegistry) |
 | Disk | `volumeAvailableCapacityForImportantUsage` (same as Finder) |
+| Disk activity | `IOBlockStorageDriver` → `Statistics` (`Bytes (Read)` / `Bytes (Write)`) |
 
 The private `libIOReport` is loaded with `dlopen`, so a missing symbol degrades gracefully instead of crashing. [RESEARCH.md](RESEARCH.md) has the details: units, M4 quirks, sensor naming and what was verified.
 

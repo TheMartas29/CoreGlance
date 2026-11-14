@@ -68,8 +68,8 @@ final class ThermalStateTests: XCTestCase {
     func testReadmeStatesTheRealMetricCount() throws {
         let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         let readme = try String(contentsOf: root.appendingPathComponent("README.md"), encoding: .utf8)
-        XCTAssertEqual(Metric.allCases.count, 20)  // 19 original metrics + thermal state
-        XCTAssertTrue(readme.contains("any combination of 20 metrics"))
+        XCTAssertEqual(Metric.allCases.count, 21)  // 19 original metrics + thermal state + disk activity
+        XCTAssertTrue(readme.contains("any combination of 21 metrics"))
     }
 
     func testBarSeverityAndValueFollowThermalState() {

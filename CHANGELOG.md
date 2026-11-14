@@ -6,6 +6,24 @@
 
 - Volitelné systémové notifikace: v Nastavení → Alerts jde zapnout upozornění, když teplota CPU, GPU, baterie nebo SSD dosáhne kritické úrovně nebo macOS hlásí thermal state Serious či Critical. Funkce je ve výchozím stavu vypnutá, o oprávnění se macOS zeptá až při zapnutí; stejná notifikace se opakuje nejdřív po 10 minutách. (#91)
 
+## [0.7.0] – 2026-11-14
+
+### Přidáno
+
+- Nová metrika Disk activity: rychlost čtení a zápisu disku v menu baru (dva řádky, zápis nad čtením) a řádek Activity v sekci Disk v popoveru. Ve výchozím nastavení je vypnutá; na Macu bez čitelných statistik disku se nenabízí. (#90)
+
+## [0.6.0] – 2026-11-14
+
+### Přidáno
+
+- V popoveru je u CPU, GPU, paměti a teploty CPU malý graf posledních pěti minut, takže je vidět, co se dělo před otevřením. Historie je jen v paměti. Grafy jdou vypnout v Nastavení (Show history graphs). (#89)
+
+## [0.5.0] – 2026-11-14
+
+### Přidáno
+
+- V Nastavení se u dostupné aktualizace objeví tlačítko „Install and restart“: aplikace stáhne novou verzi z GitHub Releases, ověří kontrolní součet SHA-256, nahradí sama sebe a znovu se spustí. Při chybě se zobrazí krátká zpráva a nainstalovaná verze zůstane beze změny. Kontrolní součet chrání před poškozeným stažením, ne před kompromitovaným účtem na GitHubu. Nové vydání nahrává i soubor `CoreGlance.zip.sha256`. (#88)
+
 ## [0.4.5] – 2026-11-14
 
 ### Změněno

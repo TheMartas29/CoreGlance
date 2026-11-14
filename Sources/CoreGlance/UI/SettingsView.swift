@@ -31,6 +31,7 @@ struct SettingsView: View {
             Toggle("Show glyphs", isOn: $prefs.showGlyphs)
             Toggle("Show labels (CPU, GPU, SSD…)", isOn: $prefs.showCaptions)
             Toggle("Memory as percent", isOn: $prefs.memoryAsPercent)
+            Toggle("Show history graphs", isOn: $prefs.showHistory)
 
             Divider()
             Text("Temperatures").font(.subheadline.weight(.semibold))
@@ -87,7 +88,17 @@ struct SettingsView: View {
             if let update = updater.availableUpdate {
                 HStack(spacing: 6) {
                     Text("Update available: \(update.version)").font(.caption)
+                    if updater.canInstall(update) {
+                        Button(updater.installState == .installing ? "Installing…" : "Install and restart") {
+                            Task { await updater.installAvailable() }
+                        }
+                        .font(.caption)
+                        .disabled(updater.installState == .installing)
+                    }
                     Link("Release page", destination: update.pageURL).font(.caption)
+                }
+                if case .failed(let message) = updater.installState {
+                    Text(message).font(.caption).foregroundColor(.red)
                 }
             }
         }

@@ -77,8 +77,15 @@ enum StatusBarRenderer {
             let rpm = s.thermals.fans.map(\.rpm).max()
             return rpm.map { "\(Int($0))" } ?? "–"
         case .thermalState: return s.thermalState.shortText
-        case .network: return ""
+        case .network, .diskActivity: return ""
         }
+    }
+
+    /// Two-line text of the stacked metrics that are not plain values (disk activity: write above read).
+    static func stackedText(for metric: Metric, in s: Snapshot) -> (top: String, bottom: String)? {
+        guard metric == .diskActivity else { return nil }
+        guard let io = s.diskIO else { return ("W–", "R–") }
+        return ("W" + Format.rate(io.write), "R" + Format.rate(io.read))
     }
 
     private static func parts(for metric: Metric, in s: Snapshot, prefs: Preferences) -> [Part] {
@@ -86,12 +93,14 @@ enum StatusBarRenderer {
         if prefs.showGlyphs, let image = glyph(metric, s) {
             parts.append(.glyph(image))
             if metric.needsCaption && prefs.showCaptions { parts.append(.caption(metric.caption)) }
-        } else if metric != .network {
+        } else if metric != .network && metric != .diskActivity {
             parts.append(.caption(metric.caption))
         }
         switch metric {
         case .network:
             parts.append(.stacked("↑" + Format.rate(s.network.up), "↓" + Format.rate(s.network.down)))
+        case .diskActivity:
+            if let t = stackedText(for: metric, in: s) { parts.append(.stacked(t.top, t.bottom)) }
         case .cpuCores:
             parts.append(.stacked("P " + Format.percent(s.cpuP), "E " + Format.percent(s.cpuE)))
         default:
