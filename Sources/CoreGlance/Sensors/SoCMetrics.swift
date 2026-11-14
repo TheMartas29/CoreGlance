@@ -122,6 +122,8 @@ final class SoCMetrics {
 
     /// True for the channel that carries CPU energy. Only `Energy Model` / `CPU Energy` (M1–M4) is known:
     /// the M6 dump lists no CPU energy channel there at all (RESEARCH.md, coreglance#66), so no names are guessed.
+    /// `subGroup` is deliberately unused: the signature is fixed by coreglance#66, and the known CPU channel has an
+    /// empty/absent subgroup, so it cannot discriminate; it stays so a future chip can be told apart without an API change.
     static func isCPUEnergyChannel(group: String, subGroup: String?, name: String, unit: String) -> Bool {
         group == "Energy Model" && name == "CPU Energy" && joulesIfKnown(0, unit: unit) != nil
     }
@@ -139,7 +141,8 @@ final class SoCMetrics {
         guard let (channels, seconds) = report.sample(), seconds > 0 else { return nil }
         var s = SoCStats()
         var e = (active: 0.0, weighted: 0.0), p = (active: 0.0, weighted: 0.0)
-        var cpuJ: Double?, gpuJ: Double?, aneJ = 0.0, dramJ = 0.0
+        var gpuJ: Double?, aneJ = 0.0, dramJ = 0.0
+        var energy: [(group: String, subGroup: String?, name: String, unit: String, value: Int64)] = []
 
         for c in channels {
             switch (c.group, c.subGroup) {
@@ -158,9 +161,11 @@ final class SoCMetrics {
                 let r = residency(c, freqs: gpuFreqs)
                 s.gpuMHz = r.active > 0 ? r.weighted / r.active : 0
             case ("Energy Model", _):
-                let j = Self.joules(report.integer(c), unit: c.unit)
+                let value = report.integer(c)
+                energy.append((group: c.group, subGroup: c.subGroup, name: c.name, unit: c.unit, value: value))
+                let j = Self.joules(value, unit: c.unit)
                 if Self.isCPUEnergyChannel(group: c.group, subGroup: c.subGroup, name: c.name, unit: c.unit) {
-                    cpuJ = (cpuJ ?? 0) + j
+                    break  // summed below by cpuJoules
                 } else if c.name == "GPU Energy" { gpuJ = j }
                 else if c.name == "GPU", gpuJ == nil { gpuJ = j }  // older chips have no "GPU Energy"
                 else if c.name.hasPrefix("ANE") { aneJ += j }
@@ -173,7 +178,7 @@ final class SoCMetrics {
         s.eCluster = ClusterFrequency(mhz: e.active > 0 ? e.weighted / e.active : (eFreqs.first ?? 0), maxMHz: eFreqs.last ?? 0)
         s.pCluster = ClusterFrequency(mhz: p.active > 0 ? p.weighted / p.active : (pFreqs.first ?? 0), maxMHz: pFreqs.last ?? 0)
         if gpuFreqs.isEmpty { s.gpuMHz = nil } else { s.gpuMaxMHz = gpuFreqs.max() }
-        s.cpuWatts = cpuJ.map { $0 / seconds }
+        s.cpuWatts = Self.cpuJoules(energy).map { $0 / seconds }
         s.gpuWatts = gpuJ.map { $0 / seconds }
         s.aneWatts = aneJ / seconds
         s.dramWatts = dramJ / seconds

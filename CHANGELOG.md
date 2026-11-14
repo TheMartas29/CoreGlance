@@ -6,6 +6,24 @@
 
 - Ukládání nastavení (metriky a jejich pořadí, interval, jednotky, prahy) je pokryté testy včetně poškozených nebo starých hodnot; chování aplikace se nemění. (#79)
 
+## [0.4.4] – 2026-11-14
+
+### Změněno
+
+- Měření příkonu CPU používá jedno testované místo výpočtu; chování na čipech M1–M4 se nemění. Kanál s neznámou jednotkou už nedává 0 W, příkon CPU se v takovém případě nezobrazí. (#78)
+
+## [0.4.3] – 2026-11-14
+
+### Změněno
+
+- Kontrola v CI nově selže i tehdy, když se některý test přeskočí, takže tichá ztráta pokrytí testy už neprojde. (#77)
+
+## [0.4.2] – 2026-11-14
+
+### Opraveno
+
+- Červená kritická hodnota v popoveru je v tmavém režimu světlejší, aby měla kontrast aspoň 4,5:1 i na skutečném pozadí popoveru. (#76)
+
 ## [0.4.1] – 2026-11-13
 
 ### Opraveno

@@ -16,6 +16,11 @@ MIN="$(tr -d '[:space:]' <"$MIN_FILE")"
 case "$MIN" in
     ''|*[!0-9]*) echo "check-test-count: $MIN_FILE must contain a single number, got '$MIN'" >&2; exit 2 ;;
 esac
+# XCTest counts a skipped test (XCTSkip) as executed: "Executed N tests, with K test(s) skipped and 0 failures".
+if grep -Eq 'with [1-9][0-9]* tests? skipped' "$LOG"; then
+    echo "check-test-count: FAIL: swift test skipped at least one test (XCTSkip): $(grep -E 'with [1-9][0-9]* tests? skipped' "$LOG" | head -1 | sed 's/^[[:space:]]*//'). A skipped test counts as executed, so the ratchet would not notice weakened coverage." >&2
+    exit 1
+fi
 N="$(sed -n 's/.*Executed \([0-9][0-9]*\) tests\{0,1\}.*/\1/p' "$LOG" | sort -n | tail -1)"
 if [ -z "$N" ]; then
     echo "check-test-count: no 'Executed N tests' summary in $LOG; tests did not run?" >&2; exit 1
