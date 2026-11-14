@@ -1,0 +1,12 @@
+Test Suite 'ThresholdTests' started at 2026-11-14 06:13:34.711.
+Test Suite 'ThresholdTests' passed at 2026-11-14 06:13:34.711.
+	 Executed 3 tests, with 0 failures (0 unexpected) in 0.000 (0.000) seconds
+Test Suite 'TmpSkipTests' started at 2026-11-14 06:13:34.711.
+/path/Tests/CoreGlanceTests/TmpSkipTests.swift:5: -[CoreGlanceTests.TmpSkipTests testSkipped] : Test skipped - temporary
+Test Case '-[CoreGlanceTests.TmpSkipTests testSkipped]' skipped (0.000 seconds).
+Test Suite 'TmpSkipTests' passed at 2026-11-14 06:13:34.712.
+	 Executed 1 test, with 1 test skipped and 0 failures (0 unexpected) in 0.000 (0.000) seconds
+Test Suite 'CoreGlanceTests.xctest' passed at 2026-11-14 06:13:34.720.
+	 Executed 110 tests, with 1 test skipped and 0 failures (0 unexpected) in 0.289 (0.294) seconds
+Test Suite 'All tests' passed at 2026-11-14 06:13:34.720.
+	 Executed 110 tests, with 1 test skipped and 0 failures (0 unexpected) in 0.289 (0.294) seconds
