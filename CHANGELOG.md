@@ -2,6 +2,8 @@
 
 ## [Nevydáno]
 
+## [0.4.3] – 2026-11-14
+
 ### Změněno
 
 - Kontrola v CI nově selže i tehdy, když se některý test přeskočí, takže tichá ztráta pokrytí testy už neprojde. (#77)
