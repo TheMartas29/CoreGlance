@@ -65,7 +65,7 @@ struct PopoverView: View {
         if showSettings {
             SettingsView(prefs: prefs, snapshot: monitor.snapshot)
         } else {
-            StatsView(s: monitor.snapshot, prefs: prefs)
+            StatsView(s: monitor.snapshot, histories: monitor.histories, prefs: prefs)
         }
     }
 }
@@ -77,21 +77,37 @@ private struct HeightKey: PreferenceKey {
 
 private struct StatsView: View {
     let s: Snapshot
+    let histories: Histories
     let prefs: Preferences
+
+    /// Temperature graph tint follows the same warning/critical levels as the text value.
+    private func temperatureTint(_ m: Metric, _ history: History) -> Color {
+        switch prefs.colorize ? prefs.severity(m, value: history.samples.last?.value) : .normal {
+        case .critical: return WarningPalette.critical
+        case .warning: return WarningPalette.warning
+        case .normal: return .accentColor
+        }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Section(title: "CPU", symbol: "cpu") {
                 Row("Usage", Format.percent(s.cpu))
+                if prefs.showHistory { SparklineView(history: histories.cpu, range: Sparkline.percentRange, tint: .accentColor, label: "CPU usage, last 5 minutes") }
                 if let p = s.cpuP { Row("P-cores", Format.percent(p) + freq(s.soc?.pCluster)) }
                 if let e = s.cpuE { Row("E-cores", Format.percent(e) + freq(s.soc?.eCluster)) }
                 if s.soc == nil, let ghz = s.nominalGHz { Row("Base frequency", String(format: "%.2f GHz", ghz)) }
                 CoreBars(cores: s.cores)
                 Row("Temperature", temps(s.thermals.cpu))
+                if prefs.showHistory, s.thermals.cpu != nil {
+                    SparklineView(history: histories.cpuTemperature, range: Sparkline.autoRange(histories.cpuTemperature.values),
+                                  tint: temperatureTint(.cpuTemperature, histories.cpuTemperature), label: "CPU temperature, last 5 minutes")
+                }
                 if let w = s.soc?.cpuWatts { Row("Power", Format.watts(w)) }
             }
             Section(title: "GPU", symbol: Metric.gpu.symbol) {
                 Row("Usage", Format.percent(s.gpu))
+                if prefs.showHistory, s.gpu != nil { SparklineView(history: histories.gpu, range: Sparkline.percentRange, tint: .accentColor, label: "GPU usage, last 5 minutes") }
                 if let mhz = s.soc?.gpuMHz { Row("Frequency", Format.mhz(mhz) + (s.soc?.gpuMaxMHz.map { " / \(Int($0))" } ?? "")) }
                 Row("Temperature", temps(s.thermals.gpu))
                 if let w = s.soc?.gpuWatts { Row("Power", Format.watts(w)) }
@@ -99,6 +115,7 @@ private struct StatsView: View {
             Section(title: "Memory", symbol: "memorychip") {
                 Row("Used", "\(Format.gigabytes(s.memory.used)) of \(Format.gigabytes(s.memory.total))")
                 Bar(value: s.memory.used / max(s.memory.total, 1), tint: pressureColor)
+                if prefs.showHistory { SparklineView(history: histories.memory, range: Sparkline.percentRange, tint: pressureColor, label: "Memory used, last 5 minutes") }
                 Row("App / Wired / Compressed", [s.memory.app, s.memory.wired, s.memory.compressed].map { String(format: "%.1f", $0 / 1_073_741_824) }.joined(separator: " / ") + " GB")
                 Row("Cached files", Format.gigabytes(s.memory.cached))
                 Row("Swap", "\(Format.gigabytes(s.memory.swapUsed)) of \(Format.gigabytes(s.memory.swapTotal))")
@@ -213,6 +230,34 @@ private struct Bar: View {
             }
         }
         .frame(height: 5)
+    }
+}
+
+/// Line chart of the last five minutes; drawn only from two samples on. Width follows the parent (no fixed width).
+private struct SparklineView: View {
+    let history: History
+    let range: ClosedRange<Double>
+    let tint: Color
+    let label: String
+
+    var body: some View {
+        if let now = history.samples.last?.time, history.samples.count >= 2 {
+            let pts = Sparkline.points(history.samples, now: now, range: range)
+            GeometryReader { geo in
+                ZStack {
+                    RoundedRectangle(cornerRadius: 3).fill(.quaternary)
+                    Path { path in
+                        for (i, p) in pts.enumerated() {
+                            let point = CGPoint(x: p.x * geo.size.width, y: (1 - p.y) * geo.size.height)
+                            i == 0 ? path.move(to: point) : path.addLine(to: point)
+                        }
+                    }
+                    .stroke(tint, style: StrokeStyle(lineWidth: 1.5, lineJoin: .round))
+                }
+            }
+            .frame(height: 24)
+            .accessibilityLabel(label)
+        }
     }
 }
 

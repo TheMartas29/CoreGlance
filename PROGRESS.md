@@ -125,3 +125,8 @@
 - Co: `PreferencesTests` (9 testů): výchozí hodnoty, round-trip všech @Published polí, pořadí a duplicity v `set`, prahy (výchozí se neukládá, přežije restart, reset), poškozená data (neznámé enumy, práh s ≠2 prvky, neznámá metrika). Vlastní suite, tearDown ji maže. Chyba v Preferences nenalezena, kód beze změny.
 - Výsledek: po merge main `scripts/min-tests.txt` = 114 + 9 = 123 (skutečný počet viz swift test).
 - Další krok: QA.
+
+## 2026-11-14 — coreglance#89 Sparkline historie v popoveru
+- Co: `History` (okno 300 s, kapacita 600, nil/nekonečno se nezapíše), `Histories.record(Snapshot)`, čistý `Sparkline` (body 0…1, pevná stupnice 0–1 pro využití, `autoRange` s minimem 10 °C). Monitor přidává do historie v main bloku spolu se snapshotem. Popover: sparkline v CPU, GPU (jen s GPU), Memory a u teploty CPU (jen s čidlem), od 2 vzorků; přepínač `showHistory` (klíč "showHistory", default zapnuto) v Settings → Appearance.
+- Výsledek: `swift build` bez varování, `swift test --disable-sandbox` 142 testů zelených (19 nových), min-tests.txt = 142. Nové testy na main nekompilují (typy neexistují).
+- Další krok: QA; vzhled grafu nebyl vidět (bez GUI session), ověřit `--snapshot` mimo sandbox.

@@ -157,6 +157,8 @@ final class Preferences: ObservableObject {
     @Published var temperatureMode: TemperatureMode { didSet { defaults.set(temperatureMode.rawValue, forKey: "temperatureMode") } }
     @Published var font: BarFont { didSet { defaults.set(font.rawValue, forKey: "font") } }
     @Published var colorize: Bool { didSet { defaults.set(colorize, forKey: "colorize") } }
+    /// Draw the 5-minute history graphs in the popover (default on).
+    @Published var showHistory: Bool { didSet { defaults.set(showHistory, forKey: "showHistory") } }
     /// User overrides of the default thresholds.
     @Published var customThresholds: [Metric: Threshold] {
         didSet {
@@ -199,6 +201,7 @@ final class Preferences: ObservableObject {
         temperatureMode = TemperatureMode(rawValue: defaults.string(forKey: "temperatureMode") ?? "") ?? .average
         font = BarFont(rawValue: defaults.string(forKey: "font") ?? "") ?? .system
         colorize = defaults.object(forKey: "colorize") as? Bool ?? true
+        showHistory = defaults.object(forKey: "showHistory") as? Bool ?? true
         let plain = defaults.dictionary(forKey: "thresholds") as? [String: [Double]] ?? [:]
         customThresholds = plain.reduce(into: [:]) { result, item in
             if let m = Metric(rawValue: item.key), item.value.count == 2 { result[m] = Threshold(warning: item.value[0], critical: item.value[1]) }
