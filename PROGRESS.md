@@ -155,3 +155,8 @@
 - Co: `DiagnosticsExport.swift` – čisté `suggestedFileName`/`sanitizedModel`, atomický `write` s čitelnou `DiagnosticsExportError`, `DiagnosticsExportState` (isBusy/message), singleton `DiagnosticsExporter` (NSSavePanel → generování na pozadí → zápis). Tlačítko v Settings → General (neaktivní při běhu). README, CONTRIBUTING, CHANGELOG; šablona compatibility.yml připravená v `.puppet/github/` (dispečer ji kopíruje).
 - Výsledek: `swift build --disable-sandbox` bez varování, `swift test --disable-sandbox` 203 testů zelených (12 nových v `DiagnosticsExportTests`), min-tests.txt = 203. Test soukromí nenašel únik (jen falešný nález `client_reads` → hledání celých slov). Nové testy na main nekompilují (typy neexistují).
 - Další krok: QA; ruční klik v .app (panel, potvrzení) neověřen – menu bar appku nespouštím.
+
+## 2026-11-15 — coreglance#115 Popover: Top processes
+- Co: `Sensors/ProcessReader.swift` – čisté `usages`/`top`/`rows`/`nanoseconds`, `ProcessReader` s injektovatelným zdrojem a hodinami, `liveSource` přes libproc (bez rootu). `Snapshot.topProcesses`, `Monitor(processes:)` + `showTopProcesses` (vypnuto = reader se nevolá), `Preferences.showTopProcesses` (výchozí zapnuto), sekce v popoveru, přepínač v Settings → Appearance. Názvy procesů nejsou v `diagnostics()`.
+- Výsledek: `swift build --disable-sandbox` OK, `swift test --disable-sandbox` 241 testů zelených (21 nových v `ProcessReaderTests`), min-tests.txt = 241. Nové testy na main nekompilují (typy neexistují). GUI nespuštěno.
+- Další krok: QA; navazující řez = žebříček podle paměti.
