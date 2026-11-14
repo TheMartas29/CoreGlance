@@ -89,8 +89,13 @@
 - Výsledek: nový test podtečení na starém kódu padá (trap); celá sada po merge main viz níže.
 - Další krok: QA.
 
+## 2026-11-14 — coreglance#77 Ratchet: přeskočený test je chyba
+- Co: `check-test-count.sh` skončí kódem 1, když log obsahuje „with K test(s) skipped“ (K ≥ 1); XCTest přeskočený test počítá jako provedený. Fixture `scripts/fixtures/swift-test-real.log` je zkrácený skutečný výpis `swift test --disable-sandbox` (109 testů), `swift-test-skipped.log` z dočasného testu s XCTSkip (necommitnut). Opraven odkaz v záznamu #68.
+- Výsledek: `sh scripts/test-check-test-count.sh` zelené; 6 nových kontrol na původním skriptu padalo. `min-tests.txt` beze změny (109).
+- Další krok: QA.
+
 ## 2026-11-13 — coreglance#68 CI ratchet počtu testů
-- Co: `scripts/check-test-count.sh <log> [min]` vezme nejvyšší „Executed N tests“ z logu `swift test` a porovná s `scripts/min-tests.txt` (109 = skutečný počet na main po merge #66/#67); N < min nebo chybějící souhrn = nenulový kód. Test `scripts/test-check-test-count.sh` s fixture logy (stejně, víc, méně, bez souhrnu, víc řádků Executed). CONTRIBUTING věta. Zapojení do `build.yml` (nový obsah v `.puppet/github/workflows/build.yml`, dispečer kopíruje).
+- Co: `scripts/check-test-count.sh <log> [min]` vezme nejvyšší „Executed N tests“ z logu `swift test` a porovná s `scripts/min-tests.txt` (109 = skutečný počet na main po merge #66/#67); N < min nebo chybějící souhrn = nenulový kód. Test `scripts/test-check-test-count.sh` s fixture logy (stejně, víc, méně, bez souhrnu, víc řádků Executed). CONTRIBUTING věta. Zapojení do `build.yml` (krok „Test count ratchet“ v `.github/workflows/build.yml`).
 - Výsledek: `sh scripts/test-check-test-count.sh` všechny ok; `swift test --disable-sandbox` = 109 testů. Test na main padá (skript neexistuje).
 - Další krok: QA; minimum se zvedá ručně při přidání testů.
 

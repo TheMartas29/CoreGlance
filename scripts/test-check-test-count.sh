@@ -41,6 +41,27 @@ printf 'abc\n' >"$T/min"; mklog 10; run "invalid min file fails" 2
 sh "$ROOT/scripts/check-test-count.sh" "$T/missing" "$T/min" >"$T/out" 2>&1
 check "missing log fails" 2 "$?"
 
+# Skipped tests (XCTSkip) count as executed by XCTest, so the ratchet must treat them as an error.
+printf '10\n' >"$T/min"
+printf "Test Suite 'All tests' passed at 2026-01-01 10:00:00.000.\n\t Executed 12 tests, with 1 test skipped and 0 failures (0 unexpected) in 0.2 (0.2) seconds\n" >"$T/log"
+run "one skipped test fails" 1
+check "skipped message" 1 "$(grep -c 'skipped' "$T/out")"
+printf "Test Suite 'All tests' passed at 2026-01-01 10:00:00.000.\n\t Executed 12 tests, with 3 tests skipped and 0 failures (0 unexpected) in 0.2 (0.2) seconds\n" >"$T/log"
+run "several skipped tests fail" 1
+# Skip in one suite line only (the total line is not the one that reports it).
+mklog 10; printf "\t Executed 1 test, with 1 test skipped and 0 failures (0 unexpected) in 0.1 (0.1) seconds\n" >>"$T/log"; run "skip in a suite line fails" 1
+# "with 0 failures" variants keep passing (1 test / N tests).
+printf "\t Executed 1 test, with 0 failures (0 unexpected) in 0.1 (0.1) seconds\n\t Executed 10 tests, with 0 failures (0 unexpected) in 0.1 (0.1) seconds\n" >"$T/log"; run "no skip, 1 test and N tests pass" 0
+
+# Fixtures: shortened real `swift test --disable-sandbox` output (suite headers + Executed lines).
+printf '109\n' >"$T/min"
+sh "$ROOT/scripts/check-test-count.sh" "$ROOT/scripts/fixtures/swift-test-real.log" "$T/min" >"$T/out" 2>&1
+check "real log passes" 0 "$?"
+check "real log message" 1 "$(grep -c 'ok, 109 tests (minimum 109)' "$T/out")"
+sh "$ROOT/scripts/check-test-count.sh" "$ROOT/scripts/fixtures/swift-test-skipped.log" "$T/min" >"$T/out" 2>&1
+check "real log with a skipped test fails" 1 "$?"
+check "real skipped message" 1 "$(grep -c 'skipped' "$T/out")"
+
 # The committed minimum is a single number.
 check "min-tests.txt is a number" 1 "$(grep -c '^[0-9][0-9]*$' "$ROOT/scripts/min-tests.txt")"
 exit "$FAIL"
