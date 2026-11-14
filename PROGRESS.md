@@ -108,3 +108,8 @@
 - Co: výpis `--dump` ukázal, že `Energy Model` na M6 má jen GPU a PCIe kanály, žádný CPU → bez hádání zůstává `cpuWatts` nil. Čistá `SoCMetrics.isCPUEnergyChannel`, `joulesIfKnown` (neznámá jednotka = nil, ne 0), `cpuJoules`; `sample()` používá predikát a sčítá. Fixture z výpisu v `CPUEnergyTests`. Výpis kanálů a rozhodnutí v RESEARCH.md.
 - Výsledek: `swift build` bez varování, `swift test --disable-sandbox` 103 testů zelených; nové testy na main nekompilují.
 - Další krok: na živém M6 mimo sandbox ověřit, zda vzorkování nevrací CPU kanál mimo seznam (`--dump` cpuWatts != nil); jinak SMC/jiná cesta jako nový tiket.
+
+## 2026-11-14 — coreglance#76 Kontrast darkCritical na skutečném tmavém pozadí
+- Co: Přepočet potvrdil nález: darkCritical (255,69,58) vůči 43/255 = 4,156:1 (<4,5), test `testDarkPaletteMeetsAAOnSnapshotBackground` na původním kódu padal ("4.156245435626784" is less than "4.5"). darkCritical změněn na (255,105,97), darkBackground sjednoceno na 43/255 (jako Snapshotter), testy kontrolují i 30/255 a windowBackgroundColor pod darkAqua. Adaptivní NSColor (`warningNS`/`criticalNS`) otestován pod .aqua/.darkAqua. Komentář v Contrast.swift opraven. Světlý režim beze změny.
+- Výsledek: `swift test --disable-sandbox` 113 testů zelených (4 nové), min-tests.txt = 113.
+- Další krok: QA.

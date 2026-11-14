@@ -6,6 +6,12 @@
 
 - Kontrola v CI nově selže i tehdy, když se některý test přeskočí, takže tichá ztráta pokrytí testy už neprojde. (#77)
 
+## [0.4.2] – 2026-11-14
+
+### Opraveno
+
+- Červená kritická hodnota v popoveru je v tmavém režimu světlejší, aby měla kontrast aspoň 4,5:1 i na skutečném pozadí popoveru. (#76)
+
 ## [0.4.1] – 2026-11-13
 
 ### Opraveno
