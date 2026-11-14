@@ -71,16 +71,110 @@ enum DiagnosticsExport {
     }
 }
 
+/// Události, které mění stav tlačítka. Přechody jsou čistá funkce (`DiagnosticsExportState.next`), aby šly testovat bez UI.
+enum DiagnosticsExportEvent: Equatable {
+    case panelOpened
+    case panelCancelled
+    case fileChosen
+    case finished(Result<String, DiagnosticsExportError>)  // název uloženého souboru nebo chyba
+    case timeout
+
+    static func == (a: Self, b: Self) -> Bool {
+        switch (a, b) {
+        case (.panelOpened, .panelOpened), (.panelCancelled, .panelCancelled),
+             (.fileChosen, .fileChosen), (.timeout, .timeout): return true
+        case (.finished(.success(let x)), .finished(.success(let y))): return x == y
+        case (.finished(.failure(let x)), .finished(.failure(let y))): return x == y
+        default: return false
+        }
+    }
+}
+
+extension DiagnosticsExportState {
+    /// choosingFile → generating → saved/failed; zrušení panelu a `timeout` (po `resetDelay`) vrací do .idle.
+    /// Událost, která v daném stavu nedává smysl, stav nemění (např. zpožděný `timeout` během nového ukládání).
+    func next(_ event: DiagnosticsExportEvent) -> DiagnosticsExportState {
+        switch (self, event) {
+        case (.idle, .panelOpened), (.saved, .panelOpened), (.failed, .panelOpened): return .choosingFile
+        case (.choosingFile, .panelCancelled): return .idle
+        case (.choosingFile, .fileChosen): return .generating
+        case (.generating, .finished(.success(let name))): return .saved(fileName: name)
+        case (.generating, .finished(.failure(let error))): return .failed(message: error.localizedDescription)
+        case (.saved, .timeout), (.failed, .timeout): return .idle
+        default: return self
+        }
+    }
+
+    /// Nadpis a text okna s výsledkem; nil u stavů, které se oknem neoznamují.
+    var alertContent: (title: String, text: String)? {
+        switch self {
+        case .saved(let name): return ("Diagnostics saved", name)
+        case .failed(let message): return ("Couldn't save the diagnostics", message)
+        case .idle, .choosingFile, .generating: return nil
+        }
+    }
+}
+
+/// Oznámení výsledku uživateli. Za protokolem, aby šlo v testu nahradit mockem.
+@MainActor
+protocol DiagnosticsResultPresenting {
+    func present(title: String, text: String, isFailure: Bool)
+}
+
+/// NSAlert: viditelný i tehdy, když se transientní popover při otevření NSSavePanel zavřel.
+@MainActor
+struct AlertDiagnosticsPresenter: DiagnosticsResultPresenting {
+    func present(title: String, text: String, isFailure: Bool) {
+        let alert = NSAlert()
+        alert.messageText = title
+        alert.informativeText = text
+        alert.alertStyle = isFailure ? .warning : .informational
+        NSApp.activate(ignoringOtherApps: true)
+        alert.runModal()
+    }
+}
+
 /// Spojuje tlačítko, NSSavePanel a generování. Je to singleton, protože transientní popover se při otevření
 /// panelu zavře a jeho view zanikne; stav a zápis souboru na něm nesmí záviset.
 @MainActor
 final class DiagnosticsExporter: ObservableObject {
+    /// Za jak dlouho se .saved / .failed vrátí do .idle (zpráva v Nastavení zmizí).
+    static let resetDelay: TimeInterval = 10
+    typealias Scheduler = (TimeInterval, @escaping @MainActor () -> Void) -> Void
+
     static let shared = DiagnosticsExporter()
     @Published private(set) var state = DiagnosticsExportState.idle
 
+    private let presenter: DiagnosticsResultPresenting
+    private let schedule: Scheduler
+    private var generation = 0  // zpožděný reset dřívějšího ukládání nesmí smazat výsledek pozdějšího
+
+    init(presenter: DiagnosticsResultPresenting? = nil,
+         schedule: @escaping Scheduler = { delay, work in
+             DispatchQueue.main.asyncAfter(deadline: .now() + delay) { MainActor.assumeIsolated { work() } }
+         }) {
+        self.presenter = presenter ?? AlertDiagnosticsPresenter()
+        self.schedule = schedule
+    }
+
+    /// Použije událost na stav; po dokončení zápisu naplánuje návrat do .idle a oznámí výsledek oknem.
+    func apply(_ event: DiagnosticsExportEvent) {
+        let new = state.next(event)
+        guard new != state else { return }
+        state = new
+        if case .panelOpened = event { generation += 1 }
+        guard case .finished = event, let content = new.alertContent else { return }
+        let token = generation
+        schedule(Self.resetDelay) { [weak self] in
+            guard let self, self.generation == token else { return }
+            self.apply(.timeout)
+        }
+        presenter.present(title: content.title, text: content.text, isFailure: new.isFailure)
+    }
+
     func start(monitor: Monitor) {
         guard !state.isBusy else { return }
-        state = .choosingFile
+        apply(.panelOpened)
         let panel = NSSavePanel()
         panel.nameFieldStringValue = DiagnosticsExport.suggestedFileName(model: Sysctl.string("hw.model"), date: Date())
         panel.allowedContentTypes = [.plainText]
@@ -90,7 +184,7 @@ final class DiagnosticsExporter: ObservableObject {
         panel.begin { [weak self] response in
             guard let self else { return }
             guard response == .OK, let url = panel.url else {
-                self.state = .idle  // zrušeno: nic se neděje
+                self.apply(.panelCancelled)  // zrušeno: nic se neděje
                 return
             }
             self.generate(monitor: monitor, to: url)
@@ -98,19 +192,18 @@ final class DiagnosticsExporter: ObservableObject {
     }
 
     private func generate(monitor: Monitor, to url: URL) {
-        state = .generating
+        apply(.fileChosen)
         // diagnostics() běží na vlastní frontě Monitoru (queue.sync), takže je z jakéhokoli vlákna bezpečná.
         nonisolated(unsafe) let monitor = monitor
         DispatchQueue.global(qos: .userInitiated).async {
-            let result: Result<Void, Error>
-            do { try DiagnosticsExport.write(monitor.diagnostics(), to: url); result = .success(()) }
-            catch { result = .failure(error) }
-            DispatchQueue.main.async {
-                switch result {
-                case .success: self.state = .saved(fileName: url.lastPathComponent)
-                case .failure(let error): self.state = .failed(message: error.localizedDescription)
-                }
+            let result: Result<String, DiagnosticsExportError>
+            do {
+                try DiagnosticsExport.write(monitor.diagnostics(), to: url)
+                result = .success(url.lastPathComponent)
+            } catch {
+                result = .failure(error as? DiagnosticsExportError ?? DiagnosticsExportError(reason: error.localizedDescription))
             }
+            DispatchQueue.main.async { self.apply(.finished(result)) }
         }
     }
 }
