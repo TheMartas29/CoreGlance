@@ -73,7 +73,7 @@ Most menu bar monitors either pull in a pile of frameworks, need a privileged he
 
 ### Updates
 
-CoreGlance checks for a new release at start and then at most once every 24 hours. It asks the public GitHub API (`https://api.github.com/repos/TheMartas29/CoreGlance/releases/latest`, no account, nothing about you is sent). When a newer release exists, **Settings** shows "Update available: X.Y.Z" with a link to the release page. (Installing the update by itself is coming in a follow-up; for now download it from the release page.)
+CoreGlance checks for a new release at start and then at most once every 24 hours. It asks the public GitHub API (`https://api.github.com/repos/TheMartas29/CoreGlance/releases/latest`, no account, nothing about you is sent). When a newer release exists, **Settings** shows "Update available: X.Y.Z" with a link to the release page and, when the app sits in a writable folder (such as /Applications), an **Install and restart** button. One click downloads `CoreGlance.zip` and `CoreGlance.zip.sha256` from GitHub Releases, checks the SHA-256, checks that the app inside has the same bundle identifier and the release's version, replaces the running app (the old one is kept as a backup until the swap worked) and starts the new one. Any failure shows a short message in Settings and leaves the installed app untouched; the release page link stays as a fallback. The checksum protects against a damaged download, not against a compromised GitHub account.
 
 To turn it off, clear **Settings → General → Check for updates automatically**; then the app makes no network requests at all. Releases are not notarized (see *First launch*).
 
@@ -92,7 +92,7 @@ To work on the code, `swift build && .build/debug/CoreGlance` runs it straight f
 
 ### Update and uninstall
 
-- **Update:** replace the app in /Applications with the new version.
+- **Update:** click **Install and restart** in Settings (see *Updates*), or replace the app in /Applications with the new version yourself.
 - **Uninstall:** quit CoreGlance (popover → **Quit**) and delete the app. Settings live in `~/Library/Preferences/io.github.coreglance.plist`.
 
 ## Usage
