@@ -50,6 +50,7 @@ final class MetricValueTests: XCTestCase {
         XCTAssertEqual(value(.memoryPressure, s), "OK")  // MemoryStats.pressure defaults to 1
         XCTAssertEqual(value(.cpuCores, s), "")
         XCTAssertEqual(value(.network, s), "")
+        XCTAssertEqual(value(.diskActivity, s), "")  // drawn as two stacked lines, see DiskIOTests
     }
 
     func testEmptySnapshotMemoryAsPercentDoesNotDivideByZero() {
@@ -81,7 +82,7 @@ final class MetricValueTests: XCTestCase {
             (.cpuCores, false), (.cpuFrequency, false), (.eFrequency, false), (.gpu, false),
             (.gpuFrequency, false), (.disk, false), (.cpuTemperature, false), (.gpuTemperature, false),
             (.batteryTemperature, false), (.ssdTemperature, false), (.battery, false), (.power, false),
-            (.fan, false),
+            (.fan, false), (.diskActivity, false),
         ]
         XCTAssertEqual(table.count, Metric.allCases.count, "table must cover every metric")
         for (m, expected) in table {

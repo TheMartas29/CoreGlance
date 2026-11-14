@@ -126,6 +126,11 @@
 - Výsledek: po merge main `scripts/min-tests.txt` = 114 + 9 = 123 (skutečný počet viz swift test).
 - Další krok: QA.
 
+## 2026-11-14 — coreglance#90 Metrika Disk activity
+- Co: `DiskIOReader` (SystemInfo.swift): čisté `totals(of:)` a `rate(previous:current:dt:)` nad 64bitovými čítači `Bytes (Read/Write)` z IOBlockStorageDriver Statistics, `Snapshot.diskIO` (nil = nedostupné), `Metric.diskActivity` (skupina Disk, vypnutá), stacked W/R v liště, řádek Activity v popoveru, `--dump` řádek `disk io`. Testy v `DiskIOTests` (14), tabulka dostupnosti a počet metrik 21 upraveny.
+- Výsledek: `swift build` bez varování, `swift test --disable-sandbox` 137 testů zelených, min-tests.txt = 137; `--dump` ukáže `disk io: read=1.6M/s write=51K/s`.
+- Další krok: QA.
+
 ## 2026-11-14 — coreglance#89 Sparkline historie v popoveru
 - Co: `History` (okno 300 s, kapacita 600, nil/nekonečno se nezapíše), `Histories.record(Snapshot)`, čistý `Sparkline` (body 0…1, pevná stupnice 0–1 pro využití, `autoRange` s minimem 10 °C). Monitor přidává do historie v main bloku spolu se snapshotem. Popover: sparkline v CPU, GPU (jen s GPU), Memory a u teploty CPU (jen s čidlem), od 2 vzorků; přepínač `showHistory` (klíč "showHistory", default zapnuto) v Settings → Appearance.
 - Výsledek: `swift build` bez varování, `swift test --disable-sandbox` 142 testů zelených (19 nových), min-tests.txt = 142. Nové testy na main nekompilují (typy neexistují).

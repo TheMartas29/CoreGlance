@@ -48,13 +48,13 @@ Most menu bar monitors either pull in a pile of frameworks, need a privileged he
 - **GPU:** usage, live frequency, temperature and power.
 - **Memory:** used (GB or %), app / wired / **compressed**, **swap**, memory pressure. These show how far you are overflowing physical RAM.
 - **History graphs:** a small 5-minute graph under CPU, GPU, memory and CPU temperature in the popover (kept in memory only, can be turned off in Settings).
-- **Disk:** free space on the boot volume.
+- **Disk:** free space on the boot volume, plus live read and write speed (Disk activity, off by default).
 - **Temperatures:** CPU, GPU, **battery**, SSD. You can show the average or the hottest sensor.
 - **Battery:** charge, charging state, time remaining, health, cycle count, charge/discharge power.
 - **Power:** whole-system watts, CPU, GPU, Neural Engine and DRAM power.
 - **Network** down/up speed, **fan speed** on Macs that have fans, and the system **thermal state** (Nominal / Fair / Serious / Critical), so you see when macOS is throttling you because of heat.
 - **Temperature alerts:** CPU, GPU, battery and SSD temperatures turn orange or red at warning and critical levels. The defaults are [researched](RESEARCH.md#alert-thresholds) and can be adjusted.
-- **Fully configurable menu bar:** pick any combination of 20 metrics (only the ones your Mac can actually read are offered), with SF Symbol glyphs, optional labels, and SF Pro or SF Mono font.
+- **Fully configurable menu bar:** pick any combination of 21 metrics (only the ones your Mac can actually read are offered), with SF Symbol glyphs, optional labels, and SF Pro or SF Mono font.
 - **Native and light:** AppKit + SwiftUI, a ~1 MB universal binary, one background timer, light and dark mode, launch at login.
 
 ## Install
@@ -144,6 +144,7 @@ Every value comes from an interface a normal user process may read:
 | Memory, swap, pressure | `host_statistics64`, `vm.swapusage`, `kern.memorystatus_vm_pressure_level` |
 | Battery | `AppleSmartBattery` (IORegistry) |
 | Disk | `volumeAvailableCapacityForImportantUsage` (same as Finder) |
+| Disk activity | `IOBlockStorageDriver` → `Statistics` (`Bytes (Read)` / `Bytes (Write)`) |
 
 The private `libIOReport` is loaded with `dlopen`, so a missing symbol degrades gracefully instead of crashing. [RESEARCH.md](RESEARCH.md) has the details: units, M4 quirks, sensor naming and what was verified.
 
