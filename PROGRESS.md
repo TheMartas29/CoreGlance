@@ -103,3 +103,8 @@
 - Co: výpis `--dump` ukázal, že `Energy Model` na M6 má jen GPU a PCIe kanály, žádný CPU → bez hádání zůstává `cpuWatts` nil. Čistá `SoCMetrics.isCPUEnergyChannel`, `joulesIfKnown` (neznámá jednotka = nil, ne 0), `cpuJoules`; `sample()` používá predikát a sčítá. Fixture z výpisu v `CPUEnergyTests`. Výpis kanálů a rozhodnutí v RESEARCH.md.
 - Výsledek: `swift build` bez varování, `swift test --disable-sandbox` 103 testů zelených; nové testy na main nekompilují.
 - Další krok: na živém M6 mimo sandbox ověřit, zda vzorkování nevrací CPU kanál mimo seznam (`--dump` cpuWatts != nil); jinak SMC/jiná cesta jako nový tiket.
+
+## 2026-11-14 — coreglance#79 Testy persistence Preferences
+- Co: `PreferencesTests` (9 testů): výchozí hodnoty, round-trip všech @Published polí, pořadí a duplicity v `set`, prahy (výchozí se neukládá, přežije restart, reset), poškozená data (neznámé enumy, práh s ≠2 prvky, neznámá metrika). Vlastní suite, tearDown ji maže. Chyba v Preferences nenalezena, kód beze změny.
+- Výsledek: `swift test --disable-sandbox` 118 testů zelených na větvi (základ 109 před mergem main). Pozor: větev je za `main` (min-tests 114) → po merge main bude 123, konflikt v min-tests.txt vyřeš na 123.
+- Další krok: QA.
