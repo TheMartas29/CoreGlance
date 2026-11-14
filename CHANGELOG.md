@@ -2,6 +2,10 @@
 
 ## [Nevydáno]
 
+### Přidáno
+
+- V popoveru je pod řádkem Network graf posledních pěti minut stahování a nahrávání a pod řádkem Activity (Disk) graf čtení a zápisu disku, takže jsou vidět i špičky, které jste mezitím minuli. Dvojice grafů má společnou stupnici od nuly, aby šly porovnat, a drobný šum se nezobrazí jako špička. Grafy se řídí volbou Show history graphs a historie zůstává jen v paměti. (#116)
+
 ## [0.10.0] – 2026-11-14
 
 ### Přidáno

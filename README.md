@@ -47,7 +47,7 @@ Most menu bar monitors either pull in a pile of frameworks, need a privileged he
 - **CPU:** total usage, **P-core vs E-core usage**, per-core bars, and **live cluster frequency in GHz**, calculated the same way as MX Power Gadget.
 - **GPU:** usage, live frequency, temperature and power.
 - **Memory:** used (GB or %), app / wired / **compressed**, **swap**, memory pressure. These show how far you are overflowing physical RAM.
-- **History graphs:** a small 5-minute graph under CPU, GPU, memory and CPU temperature in the popover (kept in memory only, can be turned off in Settings).
+- **History graphs:** a small 5-minute graph under CPU, GPU, memory, CPU temperature, network (download/upload) and disk activity (read/write) in the popover (kept in memory only, can be turned off in Settings).
 - **Disk:** free space on the boot volume, plus live read and write speed (Disk activity, off by default).
 - **Temperatures:** CPU, GPU, **battery**, SSD. You can show the average or the hottest sensor.
 - **Battery:** charge, charging state, time remaining, health, cycle count, charge/discharge power.
