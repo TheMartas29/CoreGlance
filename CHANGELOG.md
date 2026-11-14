@@ -2,6 +2,8 @@
 
 ## [Nevydáno]
 
+## [0.7.0] – 2026-11-14
+
 ### Přidáno
 
 - Nová metrika Disk activity: rychlost čtení a zápisu disku v menu baru (dva řádky, zápis nad čtením) a řádek Activity v sekci Disk v popoveru. Ve výchozím nastavení je vypnutá; na Macu bez čitelných statistik disku se nenabízí. (#90)
