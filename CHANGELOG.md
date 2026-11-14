@@ -2,6 +2,8 @@
 
 ## [Nevydáno]
 
+## [0.10.1] – 2026-11-14
+
 ### Opraveno
 
 - Save diagnostics…: po uložení (nebo po chybě zápisu) se teď vždy zobrazí okno s názvem souboru, resp. důvodem chyby, i když se popover při otevření dialogu zavřel. Zpráva v Nastavení po 10 sekundách sama zmizí. (#114)
