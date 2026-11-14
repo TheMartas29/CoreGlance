@@ -2,6 +2,10 @@
 
 ## [Nevydáno]
 
+### Opraveno
+
+- Červená kritická hodnota v popoveru je v tmavém režimu světlejší, aby měla kontrast aspoň 4,5:1 i na skutečném pozadí popoveru. (#76)
+
 ## [0.4.1] – 2026-11-13
 
 ### Opraveno
