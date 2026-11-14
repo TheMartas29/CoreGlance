@@ -127,7 +127,7 @@ The `CPU Stats` legends in the registry list these channels: `EACC_ECPU0`…`EAC
 4. `cpuWatts`: **researched in #66, no CPU energy channel exists in the list → `cpuWatts` stays nil on M6.** See the section below.
 
 ### M6 `Energy Model` channels from `--dump` (coreglance#66)
-`CoreGlance --dump` (macOS 27.2, `ioreport channel:` lines, metadata only; 7 321 channels in total) lists exactly these channels in group `Energy Model`:
+`CoreGlance --dump` (macOS 27.2, `ioreport channel:` lines, metadata only; 7 320 channels in total) lists exactly these channels in group `Energy Model`:
 
 | group | subgroup | name | unit |
 |---|---|---|---|

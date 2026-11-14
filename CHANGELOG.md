@@ -2,6 +2,10 @@
 
 ## [Nevydáno]
 
+### Změněno
+
+- Měření příkonu CPU používá jedno testované místo výpočtu; chování na čipech M1–M4 se nemění. Kanál s neznámou jednotkou už nedává 0 W, příkon CPU se v takovém případě nezobrazí. (#78)
+
 ## [0.4.3] – 2026-11-14
 
 ### Změněno
