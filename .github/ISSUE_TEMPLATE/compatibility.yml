@@ -31,7 +31,10 @@ body:
     id: dump
     attributes:
       label: Diagnostics
-      description: Output of `/Applications/CoreGlance.app/Contents/MacOS/CoreGlance --dump`
-      render: text
+      description: |
+        The full output is far too long to paste (about 800 kB; GitHub allows 65,536 characters). Attach it as a file instead:
+        in CoreGlance open Settings → General → **Save diagnostics…** and drag the saved `.txt` file into this box.
+        Alternatively run `/Applications/CoreGlance.app/Contents/MacOS/CoreGlance --dump > diagnostics.txt` in Terminal and attach `diagnostics.txt`.
+        The file contains no user name, computer name or home folder path; nothing is sent anywhere, you attach it yourself.
     validations:
       required: true

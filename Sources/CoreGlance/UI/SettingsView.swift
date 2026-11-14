@@ -4,7 +4,10 @@ struct SettingsView: View {
     @ObservedObject var prefs: Preferences
     /// Latest readings; only metrics this Mac can deliver are offered.
     let snapshot: Snapshot
+    /// Source of the diagnostics saved by "Save diagnostics…".
+    let monitor: Monitor
     @ObservedObject private var updater = Updater.shared
+    @ObservedObject private var exporter = DiagnosticsExporter.shared
     @State private var notificationsDenied = false
 
     var body: some View {
@@ -91,6 +94,14 @@ struct SettingsView: View {
                 .padding(.leading, 18)
             Text(blocker ?? "Downloads the new version, checks its SHA-256 and restarts the app. A checksum does not protect against a compromised GitHub account.")
                 .font(.caption).foregroundColor(.secondary).padding(.leading, 18)
+            HStack(spacing: 6) {
+                Button(exporter.state == .generating ? "Saving…" : "Save diagnostics…") { exporter.start(monitor: monitor) }
+                    .disabled(exporter.state.isBusy)
+                    .help("Saves what CoreGlance sees on this Mac to a file you can attach to a compatibility report. Nothing is sent anywhere.")
+                if let message = exporter.state.message {
+                    Text(message).font(.caption).foregroundColor(exporter.state.isFailure ? .red : .secondary)
+                }
+            }
             if let update = updater.availableUpdate {
                 HStack(spacing: 6) {
                     Text("Update available: \(update.version)").font(.caption)

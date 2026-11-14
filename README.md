@@ -124,7 +124,7 @@ Requires **macOS 13 Ventura or newer** (developed and verified on macOS 26).
 - ⚠️ means limited. A value that can't be read shows "–" and the rest of the app keeps working.
 - Battery rows apply to MacBooks only. Desktop Macs have no battery, and fan speed appears only on Macs with fans.
 
-**Tested on a different Mac?** Please [open a compatibility report](https://github.com/TheMartas29/CoreGlance/issues/new?template=compatibility.yml) with the output of `--dump` (see below) so this table can be updated.
+**Tested on a different Mac?** Please [open a compatibility report](https://github.com/TheMartas29/CoreGlance/issues/new?template=compatibility.yml) and attach the diagnostics file (Settings → General → **Save diagnostics…**, see below) so this table can be updated.
 
 ### Known limitations
 
@@ -157,19 +157,19 @@ CoreGlance makes **no network connections** and collects nothing. The network me
 
 ## Troubleshooting
 
-Print everything CoreGlance can see. This is the most useful thing to attach to an issue:
+The most useful thing to attach to an issue is a diagnostics file with everything CoreGlance can see. In the app open Settings → General → **Save diagnostics…**, pick a place and attach the saved `.txt` file to the issue (drag it into the issue). No Terminal needed. Alternatively, from Terminal:
 
 ```sh
-/Applications/CoreGlance.app/Contents/MacOS/CoreGlance --dump
+/Applications/CoreGlance.app/Contents/MacOS/CoreGlance --dump > diagnostics.txt
 ```
 
-The output ends with the core type of every CPU (`cpuN cluster-type=… logical-cpu-id=…`) and the list of all IOReport channels (`ioreport channel: group=… subgroup=… name=… unit=…`). Please include it in full in compatibility reports. It stays on your Mac; nothing is sent anywhere.
+Attach the file; don't paste the output into the issue, it is about 800 kB and GitHub accepts only 65,536 characters in an issue body. The file ends with the core type of every CPU (`cpuN cluster-type=… logical-cpu-id=…`) and the list of all IOReport channels (`ioreport channel: group=… subgroup=… name=… unit=…`); please send it in full. It contains no user name, computer name or home folder path. It stays on your Mac until you attach it yourself; nothing is sent anywhere.
 
 | Problem | Fix |
 |---|---|
 | "CoreGlance can't be opened" | See *First launch* above. |
 | Item is not in the menu bar | On notched MacBooks a crowded menu bar hides items behind the notch. Turn off some metrics or remove other menu bar apps. |
-| A value shows "–" | That sensor isn't available on your Mac. Please send a `--dump`. |
+| A value shows "–" | That sensor isn't available on your Mac. Please send a diagnostics file (*Save diagnostics…* in Settings). |
 | Launch at login doesn't stick | Make sure the app is in /Applications, then toggle the setting again. |
 
 ## Project structure

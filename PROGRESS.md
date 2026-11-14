@@ -150,3 +150,8 @@
 - Co: `ReleaseInfo.checksumURL` (asset `CoreGlance.zip.sha256`, trusted host, uložený v Preferences); čisté `parseChecksum`/`checksumMatches`/`sha256Hex` (CryptoKit); `UpdateInstaller` (protokol `UpdateDownloader`, stažení do dočasné složky, hash, `ditto`, kontrola bundle id + verze == release, `replace` se zálohou a rollbackem); `Updater.installAvailable` + stav; tlačítko v Settings; release job nahrává i `.sha256`; README, CHANGELOG.
 - Výsledek: `swift build --disable-sandbox` bez varování, `swift test --disable-sandbox` 143 testů zelených (20 nových), min-tests.txt = 143. Nové testy na main nekompilují. Skutečný klik v GUI neověřen (menu bar appku nespouštím).
 - Další krok: QA; ruční zkouška na Macu: nainstalovat starší release do /Applications a kliknout Install and restart.
+
+## 2026-11-14 — coreglance#104 Nastavení: Save diagnostics…
+- Co: `DiagnosticsExport.swift` – čisté `suggestedFileName`/`sanitizedModel`, atomický `write` s čitelnou `DiagnosticsExportError`, `DiagnosticsExportState` (isBusy/message), singleton `DiagnosticsExporter` (NSSavePanel → generování na pozadí → zápis). Tlačítko v Settings → General (neaktivní při běhu). README, CONTRIBUTING, CHANGELOG; šablona compatibility.yml připravená v `.puppet/github/` (dispečer ji kopíruje).
+- Výsledek: `swift build --disable-sandbox` bez varování, `swift test --disable-sandbox` 203 testů zelených (12 nových v `DiagnosticsExportTests`), min-tests.txt = 203. Test soukromí nenašel únik (jen falešný nález `client_reads` → hledání celých slov). Nové testy na main nekompilují (typy neexistují).
+- Další krok: QA; ruční klik v .app (panel, potvrzení) neověřen – menu bar appku nespouštím.

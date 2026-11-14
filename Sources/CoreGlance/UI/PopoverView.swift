@@ -63,7 +63,7 @@ struct PopoverView: View {
 
     @ViewBuilder private var page: some View {
         if showSettings {
-            SettingsView(prefs: prefs, snapshot: monitor.snapshot)
+            SettingsView(prefs: prefs, snapshot: monitor.snapshot, monitor: monitor)
         } else {
             StatsView(s: monitor.snapshot, histories: monitor.histories, prefs: prefs)
         }
