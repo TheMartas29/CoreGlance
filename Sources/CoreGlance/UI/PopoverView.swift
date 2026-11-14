@@ -126,6 +126,12 @@ private struct StatsView: View {
                 Bar(value: 1 - s.disk.free / max(s.disk.total, 1), tint: s.disk.free < 20e9 ? .orange : .accentColor)
                 if let io = s.diskIO { Row("Activity", Format.diskActivity(read: io.read, write: io.write)) }
             }
+            let processRows = prefs.showTopProcesses ? ProcessReader.rows(s.topProcesses) : []
+            if !processRows.isEmpty {
+                Section(title: "Top processes", symbol: "list.number") {
+                    ForEach(Array(processRows.enumerated()), id: \.offset) { _, r in Row(r.name, r.value) }
+                }
+            }
             if s.battery.present {
                 Section(title: "Battery", symbol: "battery.75percent") {
                     Row("Charge", Format.percent(s.battery.percent) + " · " + batteryState)

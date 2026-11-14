@@ -35,6 +35,7 @@ struct SettingsView: View {
             Toggle("Show labels (CPU, GPU, SSD…)", isOn: $prefs.showCaptions)
             Toggle("Memory as percent", isOn: $prefs.memoryAsPercent)
             Toggle("Show history graphs", isOn: $prefs.showHistory)
+            Toggle("Show top processes", isOn: $prefs.showTopProcesses)
 
             Divider()
             Text("Temperatures").font(.subheadline.weight(.semibold))
