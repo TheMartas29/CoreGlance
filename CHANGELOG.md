@@ -2,6 +2,8 @@
 
 ## [Nevydáno]
 
+## [0.6.0] – 2026-11-14
+
 ### Přidáno
 
 - V popoveru je u CPU, GPU, paměti a teploty CPU malý graf posledních pěti minut, takže je vidět, co se dělo před otevřením. Historie je jen v paměti. Grafy jdou vypnout v Nastavení (Show history graphs). (#89)
