@@ -126,4 +126,17 @@ final class PreferencesTests: XCTestCase {
         defaults.set(["network", "retired-metric", "cpu"], forKey: "metrics")
         XCTAssertEqual(Preferences(defaults: defaults).enabled, [.cpu, .network])
     }
+
+    func testShowHistoryDefaultsOn() {
+        XCTAssertTrue(Preferences(defaults: defaults).showHistory)
+    }
+
+    func testShowHistoryIsSavedUnderOwnKeyAndLoaded() {
+        let first = Preferences(defaults: defaults)
+        first.showHistory = false
+        XCTAssertEqual(defaults.object(forKey: "showHistory") as? Bool, false)
+        XCTAssertFalse(Preferences(defaults: defaults).showHistory)
+        first.showHistory = true
+        XCTAssertTrue(Preferences(defaults: defaults).showHistory)
+    }
 }
