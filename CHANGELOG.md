@@ -2,6 +2,8 @@
 
 ## [Nevydáno]
 
+## [0.9.2] – 2026-11-14
+
 ### Změněno
 
 - Disk activity: čtení a zápis se všude zobrazují ve stejném pořadí a formátu, nejdřív čtení, pak zápis (v liště `R 51K` nad `W 1.6M`, v popoveru `R 51K/s  W 1.6M/s`), stejně jako ↓ před ↑ u sítě. Dřív byl v liště zápis nad čtením. (#103)
