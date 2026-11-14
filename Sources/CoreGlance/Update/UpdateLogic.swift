@@ -100,6 +100,20 @@ enum UpdateLogic {
         return now.timeIntervalSince(lastCheck) >= checkInterval || lastCheck > now
     }
 
+    /// Install right now without a click: only with the option on, an installable newer release,
+    /// and not for a version that already failed in this session.
+    static func shouldInstallNow(autoInstall: Bool, canInstall: Bool, available: ReleaseInfo?, failedVersion: String?) -> Bool {
+        guard autoInstall, canInstall, let available else { return false }
+        return available.version != failedVersion
+    }
+
+    /// Why the "Install updates automatically" switch is disabled (nil = usable).
+    static func autoInstallBlocker(autoUpdate: Bool, canReplaceSelf: Bool) -> String? {
+        if !autoUpdate { return "Turn on “Check for updates automatically” first." }
+        if !canReplaceSelf { return "CoreGlance is not in a writable folder, so it cannot replace itself." }
+        return nil
+    }
+
     /// What Settings shows: the known release only counts while it is still newer than the running app.
     static func availableUpdate(known: ReleaseInfo?, current: String) -> ReleaseInfo? {
         guard let known, isNewer(known.version, than: current) else { return nil }
