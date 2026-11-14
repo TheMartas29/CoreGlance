@@ -2,6 +2,8 @@
 
 ## [Nevydáno]
 
+## [0.11.0] – 2026-11-14
+
 ### Přidáno
 
 - Popover má novou sekci „Top processes“: pět procesů s nejvyšším aktuálním využitím CPU (100 % = jedno plné jádro, stejně jako v Monitoru aktivity), takže hned vidíte, co ohřívá nebo zpomaluje Mac. Čte se bez práv správce a názvy procesů zůstávají jen v popoveru, nikdy se nedostanou do `--dump` ani do Save diagnostics. V Nastavení → Appearance je přepínač „Show top processes“ (výchozí zapnuto); po vypnutí se procesy vůbec nevzorkují. (#115)
