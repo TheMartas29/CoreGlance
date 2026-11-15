@@ -6,6 +6,17 @@
 
 - Volitelné systémové upozornění při kritickém tlaku paměti: když macOS začne hlásit červený tlak paměti, dostanete stejnou notifikaci jako u kritické teploty (s údajem o využité paměti), i když máte menu bar mimo zorné pole. Použije se stávající přepínač v Nastavení → Alerts (nyní „Notify when a temperature or memory pressure is critical“, výchozí vypnuto); upozornění přijde jen při přechodu do kritického stavu a nejvýš jednou za 10 minut. (#126)
 
+## [0.13.0] – 2026-11-15
+
+### Přidáno
+
+- Sekce „Top processes“ v popoveru má v hlavičce přepínač CPU / Memory. Režim Memory ukáže pět procesů s největší spotřebou paměti (fyzický footprint jako ve sloupci Memory v Monitoru aktivity, např. „1.2 GB“, „340 MB“). Zvolený režim se pamatuje i po restartu, výchozí je CPU. (#125)
+
+### Změněno
+
+- Titulek sekce říká, podle čeho se řadí („Top processes by CPU“ / „by memory“), a sekce má vždy pět řádků (chybějící jsou „–“), takže popover mezi aktualizacemi neskáče výškou. (#125)
+- `--dump` a Save diagnostics už zbytečně nevzorkují procesy. (#125)
+
 ## [0.12.1] – 2026-11-15
 
 ### Opraveno

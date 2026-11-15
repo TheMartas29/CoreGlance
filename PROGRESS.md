@@ -168,8 +168,13 @@
 
 ## 2026-11-15 — coreglance#126 Notifikace při kritickém tlaku paměti
 - Co: `AlertTracker.update` má parametry memoryPressure/memoryUsed/memoryTotal, událost `memoryPressureCritical`, cooldown 10 min, silent režim; text v `AlertMessage`; přepínač Notify on critical se znovu použil (hint v Nastavení, README, CHANGELOG).
-- Výsledek: `swift test --disable-sandbox` 264 zelených (6 nových v AlertTests), min-tests = 269 po merge s main (263 + 6). Nové testy na main nekompilují (nové API).
+- Výsledek: `swift test --disable-sandbox` 264 zelených (6 nových v AlertTests), min-tests = 279 po merge s main (273 + 6). Nové testy na main nekompilují (nové API).
 - Další krok: QA; doručení v .app neověřeno.
+
+## 2026-11-15 — coreglance#125 Top processes: přepínač CPU / Paměť
+- Co: `ProcessSample.memoryBytes` (proc_pid_rusage, ri_phys_footprint), čisté `topByMemory`, `memoryRows`, `displayRows` (vždy 5 řádků, "–" zástupné), `Format.bytes`, `TopProcessesMode` + `Preferences.topProcessesMode` (výchozí CPU), segmentovaný Picker v hlavičce sekce, titulek „by CPU / by memory“. `Monitor.diagnostics()` nevzorkuje procesy (`read(withProcesses:)`).
+- Výsledek: `swift build --disable-sandbox` OK, `swift test --disable-sandbox` 268 zelených (10 nových), min-tests.txt = 268. Test soukromí upraven: už nevyžaduje ≥2 volání zdroje při diagnostics (to je právě opraveno), jména dál nesmí uniknout.
+- Další krok: QA; Picker se v `--snapshot` vykreslí jako zástupný symbol (stejně jako přepínač v zápatí), interakci ověřit v běžící appce.
 
 ## 2026-11-15 — coreglance#123 Popover: oprava sparkline historie
 - Co: `MemoryPalette` (čára i pruh paměti ≥ 3:1 světle/tmavě), `Monitor.ingest` = jedna `objectWillChange` na tik (snapshot a histories už nejsou @Published; menu bar/alerty berou `ticks`), výchozí hodiny `CLOCK_MONOTONIC` (počítá spánek) a injektovatelné `clock`; komentář k průměru teploty v grafu.
