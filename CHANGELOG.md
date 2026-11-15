@@ -2,6 +2,8 @@
 
 ## [Nevydáno]
 
+## [0.13.0] – 2026-11-15
+
 ### Přidáno
 
 - Sekce „Top processes“ v popoveru má v hlavičce přepínač CPU / Memory. Režim Memory ukáže pět procesů s největší spotřebou paměti (fyzický footprint jako ve sloupci Memory v Monitoru aktivity, např. „1.2 GB“, „340 MB“). Zvolený režim se pamatuje i po restartu, výchozí je CPU. (#125)
