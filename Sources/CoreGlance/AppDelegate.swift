@@ -22,7 +22,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         popover.behavior = .transient
         popover.animates = false
 
-        monitor.$snapshot.receive(on: RunLoop.main).sink { [weak self] s in
+        monitor.ticks.prepend(monitor.snapshot).receive(on: RunLoop.main).sink { [weak self] s in
             guard let self else { return }
             self.render()
             self.alerts.process(s, prefs: self.prefs)

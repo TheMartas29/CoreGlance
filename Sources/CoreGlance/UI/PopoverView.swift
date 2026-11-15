@@ -99,6 +99,7 @@ private struct StatsView: View {
                 if s.soc == nil, let ghz = s.nominalGHz { Row("Base frequency", String(format: "%.2f GHz", ghz)) }
                 CoreBars(cores: s.cores)
                 Row("Temperature", temps(s.thermals.cpu))
+                // The graph always plots the sensor average, even when the bar is set to max (deliberate).
                 if prefs.showHistory, s.thermals.cpu != nil {
                     SparklineView(history: histories.cpuTemperature, range: Sparkline.autoRange(histories.cpuTemperature.values),
                                   tint: temperatureTint(.cpuTemperature, histories.cpuTemperature), label: "CPU temperature, last 5 minutes")
@@ -193,7 +194,7 @@ private struct StatsView: View {
     }
 
     private var pressureColor: Color {
-        s.memory.pressure >= 4 ? .red : s.memory.pressure >= 2 ? .yellow : .green
+        s.memory.pressure >= 4 ? MemoryPalette.critical : s.memory.pressure >= 2 ? MemoryPalette.warning : MemoryPalette.normal
     }
 }
 
