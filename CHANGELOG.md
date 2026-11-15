@@ -2,6 +2,8 @@
 
 ## [Nevydáno]
 
+## [0.12.1] – 2026-11-15
+
 ### Opraveno
 
 - Graf paměti v popoveru je ve světlém i tmavém režimu dobře čitelný: zelená, žlutá a červená čára (podle tlaku paměti) mají dostatečný kontrast vůči pozadí. (#123)
