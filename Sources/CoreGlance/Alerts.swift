@@ -5,6 +5,7 @@ import UserNotifications
 enum AlertSubject: Hashable {
     case temperature(Metric)
     case thermalState(Int)
+    case memoryPressure
 }
 
 /// One temperature reading (°C) together with its severity against the user's thresholds.
@@ -18,6 +19,8 @@ struct TemperatureReading: Equatable {
 enum AlertEvent: Equatable {
     case temperatureCritical(Metric, celsius: Double)
     case thermalState(ThermalLevel)
+    /// macOS memory pressure turned critical; bytes in use and installed, for the message.
+    case memoryPressureCritical(used: Double, total: Double)
 }
 
 /// Pure decision logic: which notifications to send for a stream of readings. No system calls,
@@ -29,6 +32,7 @@ struct AlertTracker {
     private var wasCritical: [Metric: Bool] = [:]
     private var lastSent: [AlertSubject: Date] = [:]
     private var thermalRank = 0
+    private var memoryWasCritical = false
 
     private func cooledDown(_ subject: AlertSubject, _ now: Date) -> Bool {
         guard let last = lastSent[subject] else { return true }
@@ -46,7 +50,7 @@ struct AlertTracker {
     /// Feed one snapshot. A metric absent from `temperatures` counts as not critical.
     /// With `silent` the tracker only follows the current state (used while notifications are off):
     /// it returns nothing and starts no cooldown, so later rises are judged against the real state.
-    mutating func update(temperatures: [TemperatureReading], thermalState: ThermalLevel, now: Date, silent: Bool = false) -> [AlertEvent] {
+    mutating func update(temperatures: [TemperatureReading], thermalState: ThermalLevel, memoryPressure: Int = 1, memoryUsed: Double = 0, memoryTotal: Double = 0, now: Date, silent: Bool = false) -> [AlertEvent] {
         var events: [AlertEvent] = []
         for metric in Metric.allCases where metric.isTemperature {
             let reading = temperatures.first { $0.metric == metric }
@@ -64,6 +68,13 @@ struct AlertTracker {
             lastSent[.thermalState(rank)] = now
         }
         thermalRank = rank
+        // Memory pressure: only the step into critical (4) counts; warning (2) is not announced.
+        let memoryCritical = memoryPressure >= 4
+        if !silent, memoryCritical, !memoryWasCritical, cooledDown(.memoryPressure, now) {
+            events.append(.memoryPressureCritical(used: memoryUsed, total: memoryTotal))
+            lastSent[.memoryPressure] = now
+        }
+        memoryWasCritical = memoryCritical
         return events
     }
 }
@@ -76,6 +87,11 @@ enum AlertMessage {
             let value = unit == .celsius ? celsius : celsius * 9 / 5 + 32
             let shown = "\(Int(value.rounded())) \(unit == .celsius ? "°C" : "°F")"
             return ("\(metric.title) is critical", "\(metric.title) reached \(shown) (critical level).")
+        case let .memoryPressureCritical(used, total):
+            let gb = 1_073_741_824.0
+            let percent = total > 0 ? Int((used / total * 100).rounded()) : 0
+            return ("Memory pressure is critical",
+                    String(format: "macOS reports critical memory pressure: %.1f of %.1f GB in use (%d %%). Close apps you don't need.", used / gb, total / gb, percent))
         case let .thermalState(level):
             return ("Thermal state: \(level.fullName)", "macOS reports a \(level.fullName.lowercased()) thermal state; the Mac may slow down to cool off.")
         }
@@ -125,7 +141,7 @@ final class AlertCoordinator {
             return TemperatureReading(metric: metric, celsius: c, severity: prefs.severity(metric, value: c))
         }
         // While the switch is off the tracker still follows the state, but silently.
-        for event in tracker.update(temperatures: readings, thermalState: s.thermalState, now: now, silent: !enabled) {
+        for event in tracker.update(temperatures: readings, thermalState: s.thermalState, memoryPressure: s.memory.pressure, memoryUsed: s.memory.used, memoryTotal: s.memory.total, now: now, silent: !enabled) {
             let m = AlertMessage.make(event, unit: prefs.unit)
             notifier.deliver(title: m.title, body: m.body)
         }

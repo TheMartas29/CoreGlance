@@ -166,6 +166,11 @@
 - Výsledek: `swift build --disable-sandbox` OK, `swift test --disable-sandbox` 241 testů zelených (21 nových v `ProcessReaderTests`), min-tests.txt = 241. Nové testy na main nekompilují (typy neexistují). GUI nespuštěno.
 - Další krok: QA; navazující řez = žebříček podle paměti.
 
+## 2026-11-15 — coreglance#126 Notifikace při kritickém tlaku paměti
+- Co: `AlertTracker.update` má parametry memoryPressure/memoryUsed/memoryTotal, událost `memoryPressureCritical`, cooldown 10 min, silent režim; text v `AlertMessage`; přepínač Notify on critical se znovu použil (hint v Nastavení, README, CHANGELOG).
+- Výsledek: `swift test --disable-sandbox` 264 zelených (6 nových v AlertTests), min-tests = 279 po merge s main (273 + 6). Nové testy na main nekompilují (nové API).
+- Další krok: QA; doručení v .app neověřeno.
+
 ## 2026-11-15 — coreglance#125 Top processes: přepínač CPU / Paměť
 - Co: `ProcessSample.memoryBytes` (proc_pid_rusage, ri_phys_footprint), čisté `topByMemory`, `memoryRows`, `displayRows` (vždy 5 řádků, "–" zástupné), `Format.bytes`, `TopProcessesMode` + `Preferences.topProcessesMode` (výchozí CPU), segmentovaný Picker v hlavičce sekce, titulek „by CPU / by memory“. `Monitor.diagnostics()` nevzorkuje procesy (`read(withProcesses:)`).
 - Výsledek: `swift build --disable-sandbox` OK, `swift test --disable-sandbox` 268 zelených (10 nových), min-tests.txt = 268. Test soukromí upraven: už nevyžaduje ≥2 volání zdroje při diagnostics (to je právě opraveno), jména dál nesmí uniknout.

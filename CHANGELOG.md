@@ -2,6 +2,10 @@
 
 ## [Nevydáno]
 
+### Přidáno
+
+- Volitelné systémové upozornění při kritickém tlaku paměti: když macOS začne hlásit červený tlak paměti, dostanete stejnou notifikaci jako u kritické teploty (s údajem o využité paměti), i když máte menu bar mimo zorné pole. Použije se stávající přepínač v Nastavení → Alerts (nyní „Notify when a temperature or memory pressure is critical“, výchozí vypnuto); upozornění přijde jen při přechodu do kritického stavu a nejvýš jednou za 10 minut. (#126)
+
 ## [0.13.0] – 2026-11-15
 
 ### Přidáno

@@ -103,7 +103,76 @@ final class AlertTests: XCTestCase {
         XCTAssertEqual(tr.update(temperatures: [], thermalState: .unknown, now: t0), [])
     }
 
+    // MARK: Memory pressure (1 normal, 2 warning, 4 critical)
+
+    private let gb = 1_073_741_824.0
+
+    private func mem(_ p: Int, now: Date, _ tr: inout AlertTracker, silent: Bool = false) -> [AlertEvent] {
+        tr.update(temperatures: [], thermalState: .nominal, memoryPressure: p, memoryUsed: 15 * gb, memoryTotal: 16 * gb, now: now, silent: silent)
+    }
+
+    func testMemoryPressureFiresOnlyOnTransitionToCritical() {
+        var tr = AlertTracker()
+        XCTAssertEqual(mem(1, now: t0, &tr), [])
+        XCTAssertEqual(mem(2, now: t0 + 2, &tr), [])
+        XCTAssertEqual(mem(4, now: t0 + 4, &tr), [.memoryPressureCritical(used: 15 * gb, total: 16 * gb)])
+        XCTAssertEqual(mem(4, now: t0 + 6, &tr), [])
+        XCTAssertEqual(mem(4, now: t0 + 7200, &tr), [])
+    }
+
+    func testMemoryPressureFlappingRespectsTenMinuteCooldown() {
+        var tr = AlertTracker()
+        XCTAssertEqual(mem(4, now: t0, &tr).count, 1)
+        XCTAssertEqual(mem(2, now: t0 + 60, &tr), [])
+        XCTAssertEqual(mem(4, now: t0 + 120, &tr), [])      // 2 minutes after the notification
+        XCTAssertEqual(mem(2, now: t0 + 300, &tr), [])
+        XCTAssertEqual(mem(4, now: t0 + 599, &tr), [])      // 599 s: still too early
+        XCTAssertEqual(mem(2, now: t0 + 599.5, &tr), [])
+        XCTAssertEqual(mem(4, now: t0 + 600, &tr).count, 1) // exactly 600 s
+    }
+
+    func testMemoryPressureSilentReturnsNothingAndStartsNoCooldown() {
+        var tr = AlertTracker()
+        XCTAssertEqual(mem(1, now: t0, &tr, silent: true), [])
+        XCTAssertEqual(mem(4, now: t0 + 10, &tr, silent: true), [])
+        _ = mem(2, now: t0 + 20, &tr, silent: true)
+        // The silent critical at t0+10 started no cooldown: a rise right after enabling is announced.
+        XCTAssertEqual(mem(4, now: t0 + 30, &tr).count, 1)
+    }
+
+    func testMemoryPressureCriticalBeforeSwitchOnIsNotAnnounced() {
+        var tr = AlertTracker()
+        _ = mem(4, now: t0, &tr, silent: true)
+        XCTAssertEqual(mem(4, now: t0 + 60, &tr), [])
+        _ = mem(2, now: t0 + 120, &tr)
+        XCTAssertEqual(mem(4, now: t0 + 180, &tr).count, 1)
+    }
+
+    func testCoordinatorDeliversMemoryPressureOnlyWhenOn() {
+        let fake = FakeNotifier()
+        let c = AlertCoordinator(notifier: fake)
+        var s = Snapshot()
+        s.sampled = true
+        s.memory.total = 16 * gb
+        s.memory.used = 15 * gb
+        s.memory.pressure = 4
+        c.process(s, prefs: prefs(notify: false), now: t0)
+        XCTAssertTrue(fake.delivered.isEmpty)
+        s.memory.pressure = 2
+        c.process(s, prefs: prefs(notify: true), now: t0 + 10)
+        s.memory.pressure = 4
+        c.process(s, prefs: prefs(notify: true), now: t0 + 20)
+        XCTAssertEqual(fake.delivered.map(\.title), ["Memory pressure is critical"])
+    }
+
     // MARK: AlertMessage
+
+    func testMemoryPressureMessage() {
+        // 15 of 16 GB = 94 % (rounded from 93.75).
+        let m = AlertMessage.make(.memoryPressureCritical(used: 15 * gb, total: 16 * gb), unit: .celsius)
+        XCTAssertEqual(m.title, "Memory pressure is critical")
+        XCTAssertEqual(m.body, "macOS reports critical memory pressure: 15.0 of 16.0 GB in use (94 %). Close apps you don't need.")
+    }
 
     func testTemperatureMessageCelsiusAndFahrenheit() {
         // 101 °C = 213.8 °F (101 × 9/5 + 32), shown rounded as 214.
