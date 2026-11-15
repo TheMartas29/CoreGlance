@@ -10,6 +10,8 @@ struct ProcessSample: Equatable {
     var pid: Int32
     var name: String
     var cpuNanos: UInt64
+    /// Physical footprint in bytes (`ri_phys_footprint`, the "Memory" column of Activity Monitor); 0 = unreadable.
+    var memoryBytes: UInt64 = 0
 }
 
 /// CPU use of one process; `cpu` is in percent of one core (100 = one full core, like Activity Monitor).
@@ -17,6 +19,17 @@ struct ProcessUsage: Equatable {
     var pid: Int32
     var name: String
     var cpu: Double
+    /// Physical footprint in bytes (used by the Memory ranking).
+    var memory: UInt64 = 0
+}
+
+/// What the Top processes section ranks by (Preferences, default CPU).
+enum TopProcessesMode: String, CaseIterable {
+    case cpu, memory
+
+    var label: String { self == .cpu ? "CPU" : "Memory" }
+    /// Section title: says what the ranking is by.
+    var title: String { self == .cpu ? "Top processes by CPU" : "Top processes by memory" }
 }
 
 final class ProcessReader {
@@ -27,6 +40,8 @@ final class ProcessReader {
     private let count: Int
     private var previous: [Int32: ProcessSample] = [:]
     private var previousTime: TimeInterval?
+    /// Memory ranking of the last `sample()` (available from the first call, it needs no baseline).
+    private(set) var topMemory: [ProcessUsage] = []
 
     /// `source` and `clock` are injectable so tests feed fixture processes instead of the live system.
     init(count: Int = 5,
@@ -65,12 +80,38 @@ final class ProcessReader {
         return Array(busy.prefix(count))
     }
 
-    /// Popover rows: shortened name and "12.3%" text. Empty input gives no rows, so the section stays hidden.
-    static func rows(_ usages: [ProcessUsage]) -> [(name: String, value: String)] {
-        usages.map { u in
-            let name = u.name.count > 24 ? String(u.name.prefix(23)) + "…" : u.name
-            return (name, String(format: "%.1f%%", u.cpu))
+    /// The `count` processes with the largest footprint. Ties are ordered by name, then pid.
+    /// Empty names and processes with an unreadable (0) footprint are left out.
+    static func topByMemory(_ samples: [ProcessSample], count: Int) -> [ProcessUsage] {
+        guard count > 0 else { return [] }
+        let big = samples.filter { !$0.name.isEmpty && $0.memoryBytes > 0 }.sorted {
+            if $0.memoryBytes != $1.memoryBytes { return $0.memoryBytes > $1.memoryBytes }
+            if $0.name != $1.name { return $0.name < $1.name }
+            return $0.pid < $1.pid
         }
+        return big.prefix(count).map { ProcessUsage(pid: $0.pid, name: $0.name, cpu: 0, memory: $0.memoryBytes) }
+    }
+
+    /// Popover rows: shortened name and "12.3%" text. Empty input gives no rows.
+    static func rows(_ usages: [ProcessUsage]) -> [(name: String, value: String)] {
+        usages.map { (shortName($0.name), String(format: "%.1f%%", $0.cpu)) }
+    }
+
+    /// Rows of the memory ranking: shortened name and "1.2 GB" / "340 MB".
+    static func memoryRows(_ usages: [ProcessUsage]) -> [(name: String, value: String)] {
+        usages.map { (shortName($0.name), Format.bytes($0.memory)) }
+    }
+
+    /// Always exactly `count` rows for the chosen mode; missing ones are "–" placeholders, so the popover
+    /// keeps its height between ticks (and before the first CPU reading exists).
+    static func displayRows(mode: TopProcessesMode, cpu: [ProcessUsage], memory: [ProcessUsage],
+                            count: Int = 5) -> [(name: String, value: String)] {
+        let real = mode == .cpu ? rows(cpu) : memoryRows(memory)
+        return Array(real.prefix(count)) + Array(repeating: (name: "–", value: ""), count: max(0, count - real.count))
+    }
+
+    private static func shortName(_ name: String) -> String {
+        name.count > 24 ? String(name.prefix(23)) + "…" : name
     }
 
     /// Mach absolute-time ticks to nanoseconds (`numer / denom` from `mach_timebase_info`).
@@ -86,6 +127,7 @@ final class ProcessReader {
     func sample() -> [ProcessUsage] {
         let current = source()
         let now = clock()
+        topMemory = Self.topByMemory(current, count: count)
         defer {
             previous = Dictionary(current.map { ($0.pid, $0) }, uniquingKeysWith: { _, last in last })
             previousTime = now
@@ -98,6 +140,7 @@ final class ProcessReader {
     func reset() {
         previous = [:]
         previousTime = nil
+        topMemory = []
     }
 
     /// All processes the current user can read through libproc. Unreadable pids and empty names are skipped.
@@ -119,7 +162,13 @@ final class ProcessReader {
             let name = String(cString: nameBuffer)
             guard !name.isEmpty else { continue }
             let ticks = info.pti_total_user &+ info.pti_total_system
-            result.append(ProcessSample(pid: pid, name: name, cpuNanos: nanoseconds(ticks: ticks, numer: tb.numer, denom: tb.denom)))
+            var usage = rusage_info_v2()
+            let ok = withUnsafeMutablePointer(to: &usage) {
+                $0.withMemoryRebound(to: rusage_info_t?.self, capacity: 1) { proc_pid_rusage(pid, RUSAGE_INFO_V2, $0) }
+            }
+            result.append(ProcessSample(pid: pid, name: name,
+                                        cpuNanos: nanoseconds(ticks: ticks, numer: tb.numer, denom: tb.denom),
+                                        memoryBytes: ok == 0 ? usage.ri_phys_footprint : 0))
         }
         return result
     }

@@ -49,7 +49,7 @@ Most menu bar monitors either pull in a pile of frameworks, need a privileged he
 - **Memory:** used (GB or %), app / wired / **compressed**, **swap**, memory pressure. These show how far you are overflowing physical RAM.
 - **History graphs:** a small 5-minute graph under CPU, GPU, memory, CPU temperature, network (download/upload) and disk activity (read/write) in the popover (kept in memory only, can be turned off in Settings).
 - **Disk:** free space on the boot volume, plus live read and write speed (Disk activity, off by default).
-- **Top processes:** the 5 processes using the most CPU right now (100 % = one full core, like Activity Monitor), read via libproc without root. Names stay in the popover only and are never part of `--dump` or Save diagnostics. Can be turned off in Settings → Appearance (then nothing is sampled).
+- **Top processes:** the 5 processes using the most CPU right now (100 % = one full core, like Activity Monitor), read via libproc without root. A CPU / Memory switch in the section header ranks by memory footprint instead (the Memory column of Activity Monitor, e.g. "1.2 GB"); the choice is remembered, default CPU. The section always has five rows. Names stay in the popover only and are never part of `--dump` or Save diagnostics. Can be turned off in Settings → Appearance (then nothing is sampled).
 - **Temperatures:** CPU, GPU, **battery**, SSD. You can show the average or the hottest sensor.
 - **Battery:** charge, charging state, time remaining, health, cycle count, charge/discharge power.
 - **Power:** whole-system watts, CPU, GPU, Neural Engine and DRAM power.

@@ -165,3 +165,8 @@
 - Co: `Sensors/ProcessReader.swift` – čisté `usages`/`top`/`rows`/`nanoseconds`, `ProcessReader` s injektovatelným zdrojem a hodinami, `liveSource` přes libproc (bez rootu). `Snapshot.topProcesses`, `Monitor(processes:)` + `showTopProcesses` (vypnuto = reader se nevolá), `Preferences.showTopProcesses` (výchozí zapnuto), sekce v popoveru, přepínač v Settings → Appearance. Názvy procesů nejsou v `diagnostics()`.
 - Výsledek: `swift build --disable-sandbox` OK, `swift test --disable-sandbox` 241 testů zelených (21 nových v `ProcessReaderTests`), min-tests.txt = 241. Nové testy na main nekompilují (typy neexistují). GUI nespuštěno.
 - Další krok: QA; navazující řez = žebříček podle paměti.
+
+## 2026-11-15 — coreglance#125 Top processes: přepínač CPU / Paměť
+- Co: `ProcessSample.memoryBytes` (proc_pid_rusage, ri_phys_footprint), čisté `topByMemory`, `memoryRows`, `displayRows` (vždy 5 řádků, "–" zástupné), `Format.bytes`, `TopProcessesMode` + `Preferences.topProcessesMode` (výchozí CPU), segmentovaný Picker v hlavičce sekce, titulek „by CPU / by memory“. `Monitor.diagnostics()` nevzorkuje procesy (`read(withProcesses:)`).
+- Výsledek: `swift build --disable-sandbox` OK, `swift test --disable-sandbox` 268 zelených (10 nových), min-tests.txt = 268. Test soukromí upraven: už nevyžaduje ≥2 volání zdroje při diagnostics (to je právě opraveno), jména dál nesmí uniknout.
+- Další krok: QA; Picker se v `--snapshot` vykreslí jako zástupný symbol (stejně jako přepínač v zápatí), interakci ověřit v běžící appce.

@@ -18,6 +18,8 @@ struct Snapshot {
     var diskIO: DiskIOStats?
     /// Busiest processes by CPU. Names are local-only: never print this into `--dump` or diagnostics.
     var topProcesses: [ProcessUsage] = []
+    /// Biggest processes by memory footprint (same privacy rule as `topProcesses`).
+    var topMemory: [ProcessUsage] = []
     var thermalState: ThermalLevel = .unknown
     /// False until the first real reading; until then every metric counts as available.
     var sampled = false
@@ -123,7 +125,8 @@ final class Monitor: ObservableObject {
         return queue.sync { read() }
     }
 
-    private func read() -> Snapshot {
+    /// `withProcesses: false` skips the process sampling (diagnostics never print process names anyway).
+    private func read(withProcesses: Bool = true) -> Snapshot {
         var s = Snapshot()
         s.sampled = true
         let loads = cpuLoad.sample()
@@ -144,8 +147,11 @@ final class Monitor: ObservableObject {
         s.network = network.sample()
         s.disk = DiskReader.read()
         s.diskIO = diskIO.sample()
-        if showTopProcesses {
+        if !withProcesses {
+            // leave the reader's baseline alone
+        } else if showTopProcesses {
             s.topProcesses = processes.sample()
+            s.topMemory = processes.topMemory
         } else {
             processes.reset()
         }
@@ -156,9 +162,9 @@ final class Monitor: ObservableObject {
     /// Plain-text dump of everything the sensors see; `CoreGlance --dump` prints it.
     func diagnostics() -> String {
         queue.sync {
-            _ = read()
+            _ = read(withProcesses: false)
             Thread.sleep(forTimeInterval: 1)
-            let s = read()
+            let s = read(withProcesses: false)
             var lines = ["CoreGlance diagnostics", "chip: \(chipName)  model: \(Sysctl.string("hw.model") ?? "?")  macOS: \(ProcessInfo.processInfo.operatingSystemVersionString)"]
             lines.append("cores: " + cpuLoad.kinds.map { $0.rawValue.isEmpty ? "?" : $0.rawValue }.joined())
             lines.append("smc sensors: \(thermals?.sensorSummary ?? "SMC unavailable")")

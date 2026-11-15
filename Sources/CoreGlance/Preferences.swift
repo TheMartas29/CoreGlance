@@ -166,6 +166,8 @@ final class Preferences: ObservableObject {
     @Published var showHistory: Bool { didSet { defaults.set(showHistory, forKey: "showHistory") } }
     /// Show the 5 busiest processes in the popover (default on); when off they are not even sampled.
     @Published var showTopProcesses: Bool { didSet { defaults.set(showTopProcesses, forKey: "showTopProcesses") } }
+    /// Ranking of the Top processes section: CPU (default) or memory.
+    @Published var topProcessesMode: TopProcessesMode { didSet { defaults.set(topProcessesMode.rawValue, forKey: "topProcessesMode") } }
     /// User overrides of the default thresholds.
     @Published var customThresholds: [Metric: Threshold] {
         didSet {
@@ -216,6 +218,7 @@ final class Preferences: ObservableObject {
         notifyOnCritical = defaults.bool(forKey: "notifyOnCritical")
         showHistory = defaults.object(forKey: "showHistory") as? Bool ?? true
         showTopProcesses = defaults.object(forKey: "showTopProcesses") as? Bool ?? true
+        topProcessesMode = TopProcessesMode(rawValue: defaults.string(forKey: "topProcessesMode") ?? "") ?? .cpu
         let plain = defaults.dictionary(forKey: "thresholds") as? [String: [Double]] ?? [:]
         customThresholds = plain.reduce(into: [:]) { result, item in
             if let m = Metric(rawValue: item.key), item.value.count == 2 { result[m] = Threshold(warning: item.value[0], critical: item.value[1]) }

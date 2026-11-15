@@ -189,11 +189,89 @@ final class ProcessReaderTests: XCTestCase {
     func testDiagnosticsNeverContainProcessNames() {
         let f = Fixture()
         let monitor = Monitor(processes: ProcessReader(source: f.source, clock: f.clock))
-        let text = monitor.diagnostics()  // reads twice, so the fixture does produce usages
-        XCTAssertGreaterThanOrEqual(f.calls, 2)
-        XCTAssertFalse(monitor.readNow().topProcesses.isEmpty)
+        _ = monitor.readNow()
+        XCTAssertFalse(monitor.readNow().topProcesses.isEmpty)  // the fixture does produce usages
+        let text = monitor.diagnostics()
         for name in f.names { XCTAssertFalse(text.contains(name), "diagnostics leaked \(name)") }
         XCTAssertFalse(text.contains("topProcesses"))
+        XCTAssertFalse(text.contains("topMemory"))
+    }
+
+    func testDiagnosticsDoNotSampleProcesses() {
+        let f = Fixture()
+        let monitor = Monitor(processes: ProcessReader(source: f.source, clock: f.clock))
+        _ = monitor.diagnostics()
+        XCTAssertEqual(f.calls, 0)
+    }
+
+    // MARK: memory ranking
+
+    private func m(_ pid: Int32, _ name: String, _ mb: UInt64) -> ProcessSample {
+        ProcessSample(pid: pid, name: name, cpuNanos: 0, memoryBytes: mb * 1_048_576)
+    }
+
+    func testTopByMemoryOrdersDescendingTakesFiveAndSkipsEmptyNames() {
+        let list = [m(1, "a", 100), m(2, "b", 900), m(3, "", 5000), m(4, "d", 300), m(5, "e", 700),
+                    m(6, "f", 200), m(7, "g", 500), m(8, "h", 50), m(9, "zero", 0)]
+        let top = ProcessReader.topByMemory(list, count: 5)
+        XCTAssertEqual(top.map(\.name), ["b", "e", "g", "d", "f"])
+        XCTAssertEqual(top[0].memory, 900 * 1_048_576)
+    }
+
+    func testTopByMemoryTieIsOrderedByNameThenPid() {
+        let top = ProcessReader.topByMemory([m(9, "same", 10), m(3, "same", 10), m(5, "alpha", 10)], count: 5)
+        XCTAssertEqual(top.map(\.pid), [5, 3, 9])
+    }
+
+    func testMemoryFormat() {
+        XCTAssertEqual(Format.bytes(UInt64(1.2 * 1_073_741_824)), "1.2 GB")
+        XCTAssertEqual(Format.bytes(340 * 1_048_576), "340 MB")
+        XCTAssertEqual(Format.bytes(512 * 1024), "512 KB")
+    }
+
+    func testCPURowsKeepPercentFormat() {
+        XCTAssertEqual(ProcessReader.rows([ProcessUsage(pid: 1, name: "x", cpu: 12.34)]).map(\.value), ["12.3%"])
+        XCTAssertEqual(ProcessReader.memoryRows([ProcessUsage(pid: 1, name: "x", cpu: 0, memory: 340 * 1_048_576)]).map(\.value), ["340 MB"])
+    }
+
+    func testDisplayRowsAlwaysHaveFiveRows() {
+        let one = [ProcessUsage(pid: 1, name: "x", cpu: 5, memory: 1_048_576)]
+        for mode in TopProcessesMode.allCases {
+            XCTAssertEqual(ProcessReader.displayRows(mode: mode, cpu: [], memory: []).count, 5)
+            XCTAssertEqual(ProcessReader.displayRows(mode: mode, cpu: one, memory: one).count, 5)
+            let many = (1...8).map { ProcessUsage(pid: Int32($0), name: "p\($0)", cpu: 1, memory: 1) }
+            XCTAssertEqual(ProcessReader.displayRows(mode: mode, cpu: many, memory: many).count, 5)
+        }
+        let rows = ProcessReader.displayRows(mode: .memory, cpu: [], memory: one)
+        XCTAssertEqual(rows[0].value, "1 MB")
+        XCTAssertEqual(rows[1].name, "–")
+    }
+
+    func testMonitorFillsTopMemory() {
+        let monitor = Monitor(processes: ProcessReader(source: { [self] in [m(1, "Big", 2048), m(2, "Small", 10)] }, clock: { 0 }))
+        let snap = monitor.readNow()  // memory ranking needs no baseline
+        XCTAssertEqual(snap.topMemory.map(\.name), ["Big", "Small"])
+    }
+
+    func testLiveSourceReportsOwnFootprint() {
+        let me = ProcessReader.liveSource().first { $0.pid == getpid() }
+        XCTAssertGreaterThan(me?.memoryBytes ?? 0, 1_048_576)
+    }
+
+    func testModeDefaultsToCPUAndPersists() throws {
+        let suite = "coreglance.tests.mode.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        XCTAssertEqual(Preferences(defaults: defaults).topProcessesMode, .cpu)
+        Preferences(defaults: defaults).topProcessesMode = .memory
+        XCTAssertEqual(Preferences(defaults: defaults).topProcessesMode, .memory)
+        defaults.set("bogus", forKey: "topProcessesMode")
+        XCTAssertEqual(Preferences(defaults: defaults).topProcessesMode, .cpu)
+    }
+
+    func testTitleSaysWhatItRanksBy() {
+        XCTAssertEqual(TopProcessesMode.cpu.title, "Top processes by CPU")
+        XCTAssertEqual(TopProcessesMode.memory.title, "Top processes by memory")
     }
 
     func testPreferenceDefaultsOnAndRoundTrips() throws {

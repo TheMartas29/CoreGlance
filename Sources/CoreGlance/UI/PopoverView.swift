@@ -131,9 +131,19 @@ private struct StatsView: View {
                     SparklineView(history: histories.diskWrite, range: range, tint: GraphPalette.secondary, label: "Disk write speed, last 5 minutes")
                 }
             }
-            let processRows = prefs.showTopProcesses ? ProcessReader.rows(s.topProcesses) : []
-            if !processRows.isEmpty {
-                Section(title: "Top processes", symbol: "list.number") {
+            if prefs.showTopProcesses {
+                let processRows = ProcessReader.displayRows(mode: prefs.topProcessesMode, cpu: s.topProcesses, memory: s.topMemory)
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Label(prefs.topProcessesMode.title, systemImage: "list.number").font(.subheadline.weight(.semibold))
+                        Spacer()
+                        Picker("Rank by", selection: Binding(get: { prefs.topProcessesMode }, set: { prefs.topProcessesMode = $0 })) {
+                            ForEach(TopProcessesMode.allCases, id: \.self) { Text($0.label).tag($0) }
+                        }
+                        .pickerStyle(.segmented)
+                        .labelsHidden()
+                        .fixedSize()
+                    }
                     ForEach(Array(processRows.enumerated()), id: \.offset) { _, r in Row(r.name, r.value) }
                 }
             }
