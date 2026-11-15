@@ -6,6 +6,14 @@
 
 - Volitelné systémové upozornění při kritickém tlaku paměti: když macOS začne hlásit červený tlak paměti, dostanete stejnou notifikaci jako u kritické teploty (s údajem o využité paměti), i když máte menu bar mimo zorné pole. Použije se stávající přepínač v Nastavení → Alerts (nyní „Notify when a temperature or memory pressure is critical“, výchozí vypnuto); upozornění přijde jen při přechodu do kritického stavu a nejvýš jednou za 10 minut. (#126)
 
+## [0.12.1] – 2026-11-15
+
+### Opraveno
+
+- Graf paměti v popoveru je ve světlém i tmavém režimu dobře čitelný: zelená, žlutá a červená čára (podle tlaku paměti) mají dostatečný kontrast vůči pozadí. (#123)
+- Popover se při každém měření překreslí jen jednou, ne dvakrát. (#123)
+- Po probuzení Macu ze spánku se v grafech neobjeví staré hodnoty napojené na nové; graf začne znovu od probuzení. (#123)
+
 ## [0.12.0] – 2026-11-14
 
 ### Přidáno

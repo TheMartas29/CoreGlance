@@ -168,5 +168,10 @@
 
 ## 2026-11-15 — coreglance#126 Notifikace při kritickém tlaku paměti
 - Co: `AlertTracker.update` má parametry memoryPressure/memoryUsed/memoryTotal, událost `memoryPressureCritical`, cooldown 10 min, silent režim; text v `AlertMessage`; přepínač Notify on critical se znovu použil (hint v Nastavení, README, CHANGELOG).
-- Výsledek: `swift test --disable-sandbox` 264 zelených (6 nových v AlertTests), min-tests = 264. Nové testy na main nekompilují (nové API).
+- Výsledek: `swift test --disable-sandbox` 264 zelených (6 nových v AlertTests), min-tests = 269 po merge s main (263 + 6). Nové testy na main nekompilují (nové API).
 - Další krok: QA; doručení v .app neověřeno.
+
+## 2026-11-15 — coreglance#123 Popover: oprava sparkline historie
+- Co: `MemoryPalette` (čára i pruh paměti ≥ 3:1 světle/tmavě), `Monitor.ingest` = jedna `objectWillChange` na tik (snapshot a histories už nejsou @Published; menu bar/alerty berou `ticks`), výchozí hodiny `CLOCK_MONOTONIC` (počítá spánek) a injektovatelné `clock`; komentář k průměru teploty v grafu.
+- Výsledek: `swift test --disable-sandbox` 263 zelených (5 nových v `SparklineFixesTests`), min-tests.txt = 263; `--snapshot` vykreslen, zelená čára viditelná. Nové testy na main nekompilují.
+- Další krok: QA.
