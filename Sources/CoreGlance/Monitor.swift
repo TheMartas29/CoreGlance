@@ -54,13 +54,32 @@ extension Metric {
 
 /// Polls every sensor on a background queue and publishes snapshots on the main thread.
 final class Monitor: ObservableObject {
-    @Published private(set) var snapshot = Snapshot()
+    /// Not `@Published`: snapshot and histories change together in `ingest`, which publishes once per tick.
+    private(set) var snapshot = Snapshot()
     /// Last five minutes of CPU, GPU, memory and CPU temperature; memory only, main thread only.
-    @Published private(set) var histories = Histories()
+    private(set) var histories = Histories()
 
     private let queue = DispatchQueue(label: "CoreGlance.monitor", qos: .utility)
     private var timer: DispatchSourceTimer?
     private let thermalSource: () -> ProcessInfo.ThermalState
+    private let clock: () -> TimeInterval
+
+    /// Seconds on a clock that keeps running while the Mac sleeps (CLOCK_MONOTONIC), unlike
+    /// `ProcessInfo.systemUptime`: after a wake-up the pre-sleep samples fall out of the 300 s window.
+    static func sleepAwareNow() -> TimeInterval {
+        Double(clock_gettime_nsec_np(CLOCK_MONOTONIC)) / 1e9
+    }
+
+    /// Stores one tick: history and snapshot together, with a single change notification for SwiftUI.
+    func ingest(_ s: Snapshot) {
+        objectWillChange.send()
+        histories.record(s, at: clock())
+        snapshot = s
+        ticks.send(s)
+    }
+
+    /// Every stored snapshot, for non-SwiftUI consumers (menu bar, alerts); not an `objectWillChange` source.
+    let ticks = PassthroughSubject<Snapshot, Never>()
 
     // Sensors are created lazily on the monitor queue; any of them may be unavailable.
     private var cpuLoad: CPULoad!
@@ -84,8 +103,10 @@ final class Monitor: ObservableObject {
     /// `thermalSource` is injectable so tests can feed every thermal state without heating the Mac;
     /// `processes` so they can feed fixture processes.
     init(thermalSource: @escaping () -> ProcessInfo.ThermalState = { ProcessInfo.processInfo.thermalState },
-         processes: ProcessReader = ProcessReader()) {
+         processes: ProcessReader = ProcessReader(),
+         clock: @escaping () -> TimeInterval = Monitor.sleepAwareNow) {
         self.thermalSource = thermalSource
+        self.clock = clock
         self.processes = processes
         queue.setSpecific(key: Monitor.queueKey, value: true)
         queue.async { [self] in
@@ -105,11 +126,7 @@ final class Monitor: ObservableObject {
         t.setEventHandler { [weak self] in
             guard let self else { return }
             let s = self.read()
-            let now = ProcessInfo.processInfo.systemUptime
-            DispatchQueue.main.async {
-                self.histories.record(s, at: now)
-                self.snapshot = s
-            }
+            DispatchQueue.main.async { self.ingest(s) }
         }
         t.resume()
         timer = t

@@ -2,6 +2,12 @@
 
 ## [Nevydáno]
 
+### Opraveno
+
+- Graf paměti v popoveru je ve světlém i tmavém režimu dobře čitelný: zelená, žlutá a červená čára (podle tlaku paměti) mají dostatečný kontrast vůči pozadí. (#123)
+- Popover se při každém měření překreslí jen jednou, ne dvakrát. (#123)
+- Po probuzení Macu ze spánku se v grafech neobjeví staré hodnoty napojené na nové; graf začne znovu od probuzení. (#123)
+
 ## [0.12.0] – 2026-11-14
 
 ### Přidáno

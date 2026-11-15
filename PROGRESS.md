@@ -165,3 +165,8 @@
 - Co: `Sensors/ProcessReader.swift` – čisté `usages`/`top`/`rows`/`nanoseconds`, `ProcessReader` s injektovatelným zdrojem a hodinami, `liveSource` přes libproc (bez rootu). `Snapshot.topProcesses`, `Monitor(processes:)` + `showTopProcesses` (vypnuto = reader se nevolá), `Preferences.showTopProcesses` (výchozí zapnuto), sekce v popoveru, přepínač v Settings → Appearance. Názvy procesů nejsou v `diagnostics()`.
 - Výsledek: `swift build --disable-sandbox` OK, `swift test --disable-sandbox` 241 testů zelených (21 nových v `ProcessReaderTests`), min-tests.txt = 241. Nové testy na main nekompilují (typy neexistují). GUI nespuštěno.
 - Další krok: QA; navazující řez = žebříček podle paměti.
+
+## 2026-11-15 — coreglance#123 Popover: oprava sparkline historie
+- Co: `MemoryPalette` (čára i pruh paměti ≥ 3:1 světle/tmavě), `Monitor.ingest` = jedna `objectWillChange` na tik (snapshot a histories už nejsou @Published; menu bar/alerty berou `ticks`), výchozí hodiny `CLOCK_MONOTONIC` (počítá spánek) a injektovatelné `clock`; komentář k průměru teploty v grafu.
+- Výsledek: `swift test --disable-sandbox` 263 zelených (5 nových v `SparklineFixesTests`), min-tests.txt = 263; `--snapshot` vykreslen, zelená čára viditelná. Nové testy na main nekompilují.
+- Další krok: QA.
