@@ -2,6 +2,15 @@
 
 ## [Nevydáno]
 
+### Přidáno
+
+- Sekce „Top processes“ v popoveru má v hlavičce přepínač CPU / Memory. Režim Memory ukáže pět procesů s největší spotřebou paměti (fyzický footprint jako ve sloupci Memory v Monitoru aktivity, např. „1.2 GB“, „340 MB“). Zvolený režim se pamatuje i po restartu, výchozí je CPU. (#125)
+
+### Změněno
+
+- Titulek sekce říká, podle čeho se řadí („Top processes by CPU“ / „by memory“), a sekce má vždy pět řádků (chybějící jsou „–“), takže popover mezi aktualizacemi neskáče výškou. (#125)
+- `--dump` a Save diagnostics už zbytečně nevzorkují procesy. (#125)
+
 ## [0.12.1] – 2026-11-15
 
 ### Opraveno

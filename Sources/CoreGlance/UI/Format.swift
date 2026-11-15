@@ -31,6 +31,14 @@ enum Format {
         String(format: "%.1f GB", bytes / 1_073_741_824)
     }
 
+    /// Process memory: "1.2 GB" from 1 GiB up, "340 MB" from 1 MiB, else "12 KB".
+    static func bytes(_ bytes: UInt64) -> String {
+        let b = Double(bytes)
+        if b >= 1_073_741_824 { return String(format: "%.1f GB", b / 1_073_741_824) }
+        if b >= 1_048_576 { return String(format: "%.0f MB", b / 1_048_576) }
+        return String(format: "%.0f KB", b / 1024)
+    }
+
     static func watts(_ w: Double?) -> String {
         guard let w else { return "–" }
         return w < 10 ? String(format: "%.2f W", w) : String(format: "%.1f W", w)
