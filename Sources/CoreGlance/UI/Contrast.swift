@@ -44,6 +44,35 @@ enum GraphPalette {
     }
 }
 
+/// Barvy čáry grafu paměti podle tlaku (normal, warning, critical); grafický prvek ≥ 3:1 vůči pozadí popoveru.
+/// Systémová zelená a žlutá mají na bílé jen ~2,2:1 a ~1,5:1.
+enum MemoryPalette {
+    static let lightNormal = RGB(r: 0, g: 128, b: 0)
+    static let lightWarning = RGB(r: 176, g: 110, b: 0)
+    static let lightCritical = RGB(r: 180, g: 0, b: 0)
+    static let darkNormal = RGB(r: 48, g: 209, b: 88)
+    static let darkWarning = RGB(r: 255, g: 214, b: 10)
+    static let darkCritical = RGB(r: 255, g: 105, b: 97)
+
+    /// (název, světlá, tmavá) pro testy.
+    static let states: [(String, RGB, RGB)] = [
+        ("normal", lightNormal, darkNormal),
+        ("warning", lightWarning, darkWarning),
+        ("critical", lightCritical, darkCritical),
+    ]
+
+    static let normal = Color(nsColor: adaptive(light: lightNormal, dark: darkNormal))
+    static let warning = Color(nsColor: adaptive(light: lightWarning, dark: darkWarning))
+    static let critical = Color(nsColor: adaptive(light: lightCritical, dark: darkCritical))
+
+    private static func adaptive(light: RGB, dark: RGB) -> NSColor {
+        NSColor(name: nil) { appearance in
+            let c = appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? dark : light
+            return NSColor(srgbRed: c.r / 255, green: c.g / 255, blue: c.b / 255, alpha: 1)
+        }
+    }
+}
+
 /// Barvy hodnot ve stavu warning/critical v popoveru. Systémové `.orange`/`.red` mají na světlém pozadí
 /// kontrast jen ~2,0:1 a ~3,3:1 (pod WCAG 4,5:1), proto má světlý režim tmavší odstíny.
 /// Tmavý warning je systemOrange (dark); tmavý critical je světlejší
