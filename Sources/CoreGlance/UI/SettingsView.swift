@@ -53,7 +53,7 @@ struct SettingsView: View {
             Divider()
             Text("Alerts").font(.subheadline.weight(.semibold))
             Toggle("Color temperatures and thermal state at warning / critical levels", isOn: $prefs.colorize)
-            Toggle("Notify when a temperature is critical", isOn: Binding(
+            Toggle("Notify when a temperature or memory pressure is critical", isOn: Binding(
                 get: { prefs.notifyOnCritical },
                 set: { on in
                     prefs.notifyOnCritical = on

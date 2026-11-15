@@ -165,3 +165,8 @@
 - Co: `Sensors/ProcessReader.swift` – čisté `usages`/`top`/`rows`/`nanoseconds`, `ProcessReader` s injektovatelným zdrojem a hodinami, `liveSource` přes libproc (bez rootu). `Snapshot.topProcesses`, `Monitor(processes:)` + `showTopProcesses` (vypnuto = reader se nevolá), `Preferences.showTopProcesses` (výchozí zapnuto), sekce v popoveru, přepínač v Settings → Appearance. Názvy procesů nejsou v `diagnostics()`.
 - Výsledek: `swift build --disable-sandbox` OK, `swift test --disable-sandbox` 241 testů zelených (21 nových v `ProcessReaderTests`), min-tests.txt = 241. Nové testy na main nekompilují (typy neexistují). GUI nespuštěno.
 - Další krok: QA; navazující řez = žebříček podle paměti.
+
+## 2026-11-15 — coreglance#126 Notifikace při kritickém tlaku paměti
+- Co: `AlertTracker.update` má parametry memoryPressure/memoryUsed/memoryTotal, událost `memoryPressureCritical`, cooldown 10 min, silent režim; text v `AlertMessage`; přepínač Notify on critical se znovu použil (hint v Nastavení, README, CHANGELOG).
+- Výsledek: `swift test --disable-sandbox` 264 zelených (6 nových v AlertTests), min-tests = 264. Nové testy na main nekompilují (nové API).
+- Další krok: QA; doručení v .app neověřeno.
